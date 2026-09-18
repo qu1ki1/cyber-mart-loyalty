@@ -1,3 +1,4 @@
+import AdminMenu from "./admin/AdminMenu";
 import Dashboard from "./admin/Dashboard";
 import Users from "./admin/Users";
 import Gifts from "./admin/Gifts";
@@ -7,21 +8,24 @@ import Settings from "./admin/Settings";
 export default function Admin() {
   const path = window.location.pathname;
 
-  if (path === "/admin/users") {
-    return <Users />;
-  }
+  let content = <Dashboard />;
 
-  if (path === "/admin/gifts") {
-    return <Gifts />;
-  }
+  if (path === "/admin/users") content = <Users />;
+  if (path === "/admin/gifts") content = <Gifts />;
+  if (path === "/admin/winners") content = <Winners />;
+  if (path === "/admin/settings") content = <Settings />;
 
-  if (path === "/admin/winners") {
-    return <Winners />;
-  }
-
-  if (path === "/admin/settings") {
-    return <Settings />;
-  }
-
-  return <Dashboard />;
+  return (
+    <div
+      style={{
+        display: "flex",
+        minHeight: "100vh",
+        background: "var(--bg)",
+        color: "var(--ink)",
+      }}
+    >
+      <AdminMenu />
+      <main style={{ flex: 1, overflow: "auto" }}>{content}</main>
+    </div>
+  );
 }
