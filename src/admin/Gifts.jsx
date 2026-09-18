@@ -1,16 +1,13 @@
-export default function Gifts(){
+export default function Gifts() {
 
   return (
     <div>
 
-      <h1>
-        🎁 Подарки
-      </h1>
+      <h1>🎁 Подарки</h1>
 
       <p>
-        Управление подарками CYBER MART
+        Здесь будут настройки подарков
       </p>
-
 
     </div>
   )
