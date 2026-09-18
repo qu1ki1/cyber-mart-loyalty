@@ -10,48 +10,75 @@ const supabase = createClient(
 
 export default async function handler(req, res) {
 
-  const message = req.body?.message;
+  try {
 
-  if (!message) {
-    return res.status(200).json({ ok: true });
-  }
+    const message = req.body?.message;
 
-  const chatId = message.chat.id;
+    if (!message) {
+      return res.status(200).json({
+        ok: true
+      });
+    }
 
-  if (message.text === "/start") {
 
+    const chatId = message.chat.id;
+
+
+    // сохраняем пользователя без дублей
     await supabase
       .from("users")
-      .insert({
-        telegram_id: chatId,
-        username: message.from.username,
-        first_name: message.from.first_name
-      });
-
-
-    await bot.sendMessage(
-      chatId,
-      "🎮 CYBER MART\n\nТвой подарок за визит 👇",
-      {
-        reply_markup: {
-          inline_keyboard: [
-            [
-              {
-                text: "🎁 Получить подарок",
-                web_app: {
-                  url: "https://cyber-mart-loyalty.vercel.app"
-                }
-              }
-            ]
-          ]
+      .upsert(
+        {
+          telegram_id: chatId,
+          username: message.from?.username || null,
+          first_name: message.from?.first_name || null,
+          attempts: 1
+        },
+        {
+          onConflict: "telegram_id"
         }
-      }
-    );
+      );
+
+
+    // команда старт
+    if (message.text === "/start") {
+
+      await bot.sendMessage(
+        chatId,
+        "🎮 CYBER MART\n\nТвой подарок за визит 👇",
+        {
+          reply_markup: {
+            inline_keyboard: [
+              [
+                {
+                  text: "🎁 Получить подарок",
+                  web_app: {
+                    url: "https://cyber-mart-loyalty.vercel.app"
+                  }
+                }
+              ]
+            ]
+          }
+        }
+      );
+
+    }
+
+
+    return res.status(200).json({
+      ok:true
+    });
+
+
+  } catch (error) {
+
+    console.error(error);
+
+    return res.status(500).json({
+      ok:false,
+      error:error.message
+    });
+
   }
-
-
-  res.status(200).json({
-    ok:true
-  });
 
 }
