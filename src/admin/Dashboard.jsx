@@ -1,28 +1,18 @@
 export default function Dashboard(){
 
-
 return (
 
 <div>
 
-<h1>
-📊 Дашборд
-</h1>
+<h1>📊 Дашборд</h1>
 
-
-<div>
-
+<p>
 Пользователей: 0
+</p>
 
-</div>
-
-
-<div>
-
+<p>
 Выдано подарков: 0
-
-</div>
-
+</p>
 
 </div>
 
