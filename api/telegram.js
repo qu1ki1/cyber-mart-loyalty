@@ -1,12 +1,10 @@
-import TelegramBot from "node-telegram-bot-api";
 import { createClient } from "@supabase/supabase-js";
-
-const bot = new TelegramBot(process.env.BOT_TOKEN);
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_KEY
 );
+
 
 export default async function handler(req, res) {
 
@@ -24,7 +22,6 @@ export default async function handler(req, res) {
     const chatId = message.chat.id;
 
 
-    // сохраняем пользователя без дублей
     await supabase
       .from("users")
       .upsert(
@@ -40,25 +37,33 @@ export default async function handler(req, res) {
       );
 
 
-    // команда старт
     if (message.text === "/start") {
 
-      await bot.sendMessage(
-        chatId,
-        "🎮 CYBER MART\n\nТвой подарок за визит 👇",
+      await fetch(
+        `https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendMessage`,
         {
-          reply_markup: {
-            inline_keyboard: [
-              [
-                {
-                  text: "🎁 Получить подарок",
-                  web_app: {
-                    url: "https://cyber-mart-loyalty.vercel.app"
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text:
+              "🎮 CYBER MART\n\nТвой подарок за визит 👇",
+            reply_markup: {
+              inline_keyboard: [
+                [
+                  {
+                    text: "🎁 Получить подарок",
+                    web_app: {
+                      url:
+                        "https://cyber-mart-loyalty.vercel.app"
+                    }
                   }
-                }
+                ]
               ]
-            ]
-          }
+            }
+          })
         }
       );
 
@@ -70,9 +75,9 @@ export default async function handler(req, res) {
     });
 
 
-  } catch (error) {
+  } catch(error){
 
-    console.error(error);
+    console.log(error);
 
     return res.status(500).json({
       ok:false,
