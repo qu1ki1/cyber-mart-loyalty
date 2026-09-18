@@ -1,5 +1,4 @@
-export default function AdminMenu({setPage}) {
-
+export default function AdminMenu(){
 
 return (
 
@@ -16,32 +15,41 @@ minHeight:"100vh"
 </h2>
 
 
-<button onClick={()=>setPage("dashboard")}>
+<a href="/admin">
 📊 Дашборд
-</button>
+</a>
 
 <br/><br/>
 
 
-<button onClick={()=>setPage("users")}>
+<a href="/admin/users">
 👥 Пользователи
-</button>
+</a>
 
 
 <br/><br/>
 
 
-<button onClick={()=>setPage("gifts")}>
+<a href="/admin/gifts">
 🎁 Подарки
-</button>
+</a>
 
 
 <br/><br/>
 
 
-<button onClick={()=>setPage("settings")}>
+<a href="/admin/winners">
+🏆 Победы
+</a>
+
+
+<br/><br/>
+
+
+<a href="/admin/settings">
 ⚙️ Настройки
-</button>
+</a>
+
 
 
 </div>
