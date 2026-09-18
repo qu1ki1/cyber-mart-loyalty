@@ -1,13 +1,11 @@
-import Dashboard from "./admin/Dashboard";
-import Users from "./admin/Users";
-import Gifts from "./admin/Gifts";
-import Winners from "./admin/Winners";
-import Settings from "./admin/Settings";
+import Dashboard from "./Dashboard";
+import Users from "./Users";
+import Gifts from "./Gifts";
+import Winners from "./Winners";
+import Settings from "./Settings";
 
 export default function Admin() {
-
   const path = window.location.pathname;
-
 
   if (path === "/admin/users") {
     return <Users />;
@@ -25,7 +23,5 @@ export default function Admin() {
     return <Settings />;
   }
 
-
   return <Dashboard />;
-
 }
