@@ -1,58 +1,66 @@
-export default function Admin() {
+import {useState} from "react";
 
-  return (
-    <div style={{
-      padding:40,
-      fontFamily:"Arial"
-    }}>
+import AdminMenu from "./admin/AdminMenu";
 
-      <h1>
-        🎮 CYBER MART ADMIN
-      </h1>
-
-      <h2>
-        Панель управления
-      </h2>
+import Dashboard from "./admin/Dashboard";
+import Users from "./admin/Users";
+import Gifts from "./admin/Gifts";
+import Settings from "./admin/Settings";
 
 
-      <div style={{
-        marginTop:30,
-        padding:20,
-        border:"1px solid #ddd",
-        borderRadius:15
-      }}>
 
-        <h3>
-          📊 Статистика
-        </h3>
-
-        <p>
-          Пользователей: 0
-        </p>
-
-        <p>
-          Выдано подарков: 0
-        </p>
-
-      </div>
+export default function Admin(){
 
 
-      <div style={{
-        marginTop:20,
-        padding:20,
-        border:"1px solid #ddd",
-        borderRadius:15
-      }}>
-
-        <h3>
-          🎁 Последние подарки
-        </h3>
-
-        Пока пусто
-
-      </div>
+const [page,setPage]=useState("dashboard");
 
 
-    </div>
-  )
+
+function renderPage(){
+
+
+if(page==="users") return <Users/>;
+
+if(page==="gifts") return <Gifts/>;
+
+if(page==="settings") return <Settings/>;
+
+
+return <Dashboard/>;
+
+
+}
+
+
+
+return (
+
+<div style={{
+display:"flex",
+background:"#000",
+color:"#fff",
+minHeight:"100vh"
+}}>
+
+
+<AdminMenu setPage={setPage}/>
+
+
+<div style={{
+padding:30,
+flex:1
+}}>
+
+
+{renderPage()}
+
+
+</div>
+
+
+</div>
+
+)
+
+
 }
