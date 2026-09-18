@@ -1,6 +1,5 @@
 export default function Settings(){
 
-
 return (
 
 <div>
@@ -11,7 +10,7 @@ return (
 
 
 <p>
-Настройки приложения
+Настройки кампании
 </p>
 
 

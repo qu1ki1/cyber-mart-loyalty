@@ -1,32 +1,50 @@
-import {useEffect,useState} from "react"
-import {getUsers} from "./supabaseAdmin"
+import { useEffect, useState } from "react";
+import { getUsers } from "./supabaseAdmin";
+
+
+type User = {
+  id:number;
+  telegram_id:number;
+  first_name:string | null;
+  username:string | null;
+  attempts:number;
+  gift:string | null;
+};
+
 
 
 export default function Users(){
 
-const [users,setUsers]=useState([])
+
+const [users,setUsers] = useState<User[]>([]);
+
 
 
 useEffect(()=>{
 
-getUsers().then(setUsers)
+  getUsers()
+    .then((data)=>setUsers(data as User[]));
 
-},[])
+},[]);
 
 
 
-return(
+return (
 
 <div>
+
 
 <h1>
 👥 Пользователи
 </h1>
 
 
+
 <table>
 
+
 <thead>
+
 <tr>
 <th>ID</th>
 <th>Имя</th>
@@ -34,27 +52,41 @@ return(
 <th>Попытки</th>
 <th>Подарок</th>
 </tr>
+
 </thead>
+
 
 
 <tbody>
 
+
 {
-users.map(user=>(
+users.map((user)=>(
 
 <tr key={user.id}>
 
-<td>{user.telegram_id}</td>
+<td>
+{user.telegram_id}
+</td>
 
-<td>{user.first_name}</td>
 
 <td>
-@{user.username}
+{user.first_name || "-"}
 </td>
+
+
+<td>
+{user.username 
+? "@"+user.username 
+: "-"
+}
+</td>
+
 
 <td>
 {user.attempts}
 </td>
+
 
 <td>
 {user.gift || "-"}
@@ -76,5 +108,6 @@ users.map(user=>(
 </div>
 
 )
+
 
 }

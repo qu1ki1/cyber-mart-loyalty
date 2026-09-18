@@ -1,162 +1,171 @@
-import { useEffect, useState } from "react";
+import { useEffect,useState } from "react";
 import { supabase } from "../supabase";
 
 
 type Gift = {
-  id: number;
-  name: string;
-  chance: number;
-  quantity: number;
-  active: boolean;
+ id:number;
+ name:string;
+ chance:number;
+ quantity:number;
+ active:boolean;
 };
 
 
-export default function Gifts() {
 
-  const [gifts, setGifts] = useState<Gift[]>([]);
-
-  const [name, setName] = useState("");
-  const [chance, setChance] = useState(0);
-  const [quantity, setQuantity] = useState(0);
+export default function Gifts(){
 
 
-  async function loadGifts(){
-
-    const { data, error } = await supabase
-      .from("gifts")
-      .select("*")
-      .order("id");
+const [gifts,setGifts] = useState<Gift[]>([]);
 
 
-    if(!error && data){
-      setGifts(data as Gift[]);
-    }
-
-  }
+const [name,setName]=useState("");
+const [chance,setChance]=useState(0);
+const [quantity,setQuantity]=useState(0);
 
 
 
-  useEffect(()=>{
-    loadGifts();
-  },[]);
+async function load(){
+
+const {data}=await supabase
+.from("gifts")
+.select("*")
+.order("id");
+
+
+setGifts((data || []) as Gift[]);
+
+}
 
 
 
-  async function addGift(){
+useEffect(()=>{
 
-    if(!name) return;
+load();
 
-
-    await supabase
-      .from("gifts")
-      .insert({
-        name,
-        chance,
-        quantity,
-        active:true
-      });
-
-
-    setName("");
-    setChance(0);
-    setQuantity(0);
-
-    loadGifts();
-
-  }
+},[]);
 
 
 
-  async function deleteGift(id:number){
-
-    await supabase
-      .from("gifts")
-      .delete()
-      .eq("id",id);
+async function addGift(){
 
 
-    loadGifts();
+await supabase
+.from("gifts")
+.insert({
 
-  }
+name,
+chance,
+quantity,
+active:true
 
-
-
-  return (
-
-    <div>
-
-      <h1>🎁 Управление подарками</h1>
-
-
-      <div>
-
-        <input
-          placeholder="Название"
-          value={name}
-          onChange={(e)=>setName(e.target.value)}
-        />
+});
 
 
-        <input
-          type="number"
-          placeholder="Шанс"
-          value={chance}
-          onChange={(e)=>setChance(Number(e.target.value))}
-        />
+setName("");
+setChance(0);
+setQuantity(0);
 
 
-        <input
-          type="number"
-          placeholder="Количество"
-          value={quantity}
-          onChange={(e)=>setQuantity(Number(e.target.value))}
-        />
+load();
 
 
-        <button onClick={addGift}>
-          Добавить
-        </button>
-
-      </div>
+}
 
 
 
-      <h2>Список подарков</h2>
+async function remove(id:number){
 
 
-      {
-
-        gifts.map((gift)=>(
-
-          <div key={gift.id}>
-
-            <b>{gift.name}</b>
-
-            <p>
-              Шанс: {gift.chance}%
-            </p>
-
-            <p>
-              Осталось: {gift.quantity}
-            </p>
+await supabase
+.from("gifts")
+.delete()
+.eq("id",id);
 
 
-            <button
-              onClick={()=>deleteGift(gift.id)}
-            >
-              Удалить
-            </button>
+load();
 
 
-          </div>
-
-        ))
-
-      }
+}
 
 
-    </div>
 
-  )
+return (
+
+<div>
+
+
+<h1>
+🎁 Подарки
+</h1>
+
+
+<input
+placeholder="Название"
+value={name}
+onChange={e=>setName(e.target.value)}
+/>
+
+
+<input
+type="number"
+placeholder="Шанс"
+value={chance}
+onChange={e=>setChance(Number(e.target.value))}
+ />
+
+
+<input
+type="number"
+placeholder="Количество"
+value={quantity}
+onChange={e=>setQuantity(Number(e.target.value))}
+ />
+
+
+<button onClick={addGift}>
+Добавить
+</button>
+
+
+
+<h2>
+Список
+</h2>
+
+
+
+{
+gifts.map(g=>(
+
+<div key={g.id}>
+
+<b>{g.name}</b>
+
+<p>
+Шанс: {g.chance}%
+</p>
+
+<p>
+Количество: {g.quantity}
+</p>
+
+
+<button onClick={()=>remove(g.id)}>
+Удалить
+</button>
+
+
+</div>
+
+
+))
+}
+
+
+
+</div>
+
+)
+
 
 }
