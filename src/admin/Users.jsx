@@ -1,37 +1,21 @@
-import {useEffect,useState} from "react";
-import {supabase} from "../supabase";
+import {useEffect,useState} from "react"
+import {getUsers} from "./supabaseAdmin"
 
 
 export default function Users(){
 
-
-const [users,setUsers]=useState([]);
-
+const [users,setUsers]=useState([])
 
 
 useEffect(()=>{
 
-load();
+getUsers().then(setUsers)
 
-},[]);
-
-
-
-async function load(){
-
-const {data}=await supabase
-.from("users")
-.select("*")
-.order("id",{ascending:false});
-
-
-setUsers(data || []);
-
-}
+},[])
 
 
 
-return (
+return(
 
 <div>
 
@@ -40,37 +24,53 @@ return (
 </h1>
 
 
+<table>
+
+<thead>
+<tr>
+<th>ID</th>
+<th>Имя</th>
+<th>Username</th>
+<th>Попытки</th>
+<th>Подарок</th>
+</tr>
+</thead>
+
+
+<tbody>
+
 {
 users.map(user=>(
 
-<div key={user.id}
-style={{
-border:"1px solid #444",
-padding:15,
-margin:10,
-borderRadius:10
-}}
->
+<tr key={user.id}>
 
-<b>
-{user.first_name}
-</b>
+<td>{user.telegram_id}</td>
 
-<br/>
+<td>{user.first_name}</td>
 
+<td>
 @{user.username}
+</td>
 
-<br/>
-
-Попыток:
+<td>
 {user.attempts}
+</td>
+
+<td>
+{user.gift || "-"}
+</td>
 
 
-</div>
-
+</tr>
 
 ))
 }
+
+
+</tbody>
+
+
+</table>
 
 
 </div>
