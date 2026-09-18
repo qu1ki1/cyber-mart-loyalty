@@ -9,6 +9,15 @@ export type User = {
   gift: string | null;
 };
 
+export type Gift = {
+  id: number;
+  name: string;
+  chance: number;
+  active: boolean;
+  quantity: number;
+  created_at: string;
+};
+
 export async function getUsers(): Promise<User[]> {
   const { data, error } = await supabase
     .from("users")
@@ -21,4 +30,18 @@ export async function getUsers(): Promise<User[]> {
   }
 
   return (data as User[]) || [];
+}
+
+export async function getGifts(): Promise<Gift[]> {
+  const { data, error } = await supabase
+    .from("gifts")
+    .select("*")
+    .order("id", { ascending: true });
+
+  if (error) {
+    console.error(error);
+    return [];
+  }
+
+  return (data as Gift[]) || [];
 }
