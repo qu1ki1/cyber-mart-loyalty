@@ -1,8 +1,11 @@
+import { supabase } from './supabase'
 import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import './App.css'
 
+
 type IconKey = 'clock' | 'clockBig' | 'cup' | 'percent' | 'star'
+
 
 type Reward = {
   id: string
@@ -12,6 +15,7 @@ type Reward = {
   prefix: string
 }
 
+
 const REWARDS: Reward[] = [
   { id: 'r30', name: '+30 минут игры', weight: 40, icon: 'clock', prefix: 'CM30' },
   { id: 'r60', name: '+1 час игры', weight: 20, icon: 'clockBig', prefix: 'CM60' },
@@ -20,12 +24,14 @@ const REWARDS: Reward[] = [
   { id: 'jackpot', name: 'Джекпот: 3 часа игры', weight: 5, icon: 'star', prefix: 'CMJP' },
 ]
 
+
 type WinEntry = {
   rewardId: string
   code: string
   shown: boolean
   ts: number
 }
+
 
 function pickReward(): Reward {
   const total = REWARDS.reduce((s, r) => s + r.weight, 0)
@@ -37,35 +43,11 @@ function pickReward(): Reward {
   return REWARDS[0]
 }
 
+
 function genCode(prefix: string) {
   return `${prefix}-${Math.floor(1000 + Math.random() * 9000)}`
 }
 
-// NOTE: this is a client-side stand-in for the demo only.
-// In production the "1 attempt per day" check must happen on the
-// backend, keyed by telegram_id + server date, not localStorage.
-function todayKey(telegramId: number | null) {
-  const d = new Date()
-  const uid = telegramId ?? 'guest'
-  return `loyaltyDemo_${uid}_${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`
-}
-
-function loadToday(telegramId: number | null): WinEntry | null {
-  try {
-    const raw = localStorage.getItem(todayKey(telegramId))
-    return raw ? (JSON.parse(raw) as WinEntry) : null
-  } catch {
-    return null
-  }
-}
-
-function saveToday(telegramId: number | null, entry: WinEntry) {
-  try {
-    localStorage.setItem(todayKey(telegramId), JSON.stringify(entry))
-  } catch {
-    /* ignore */
-  }
-}
 
 function Icon({ icon, className }: { icon: IconKey; className?: string }) {
   switch (icon) {
@@ -117,6 +99,7 @@ function Icon({ icon, className }: { icon: IconKey; className?: string }) {
   }
 }
 
+
 // Fixed confetti burst — positions/delays are pre-computed rather than
 // Math.random() on every render, so the burst stays a single clean shot.
 const CONFETTI = Array.from({ length: 16 }, (_, i) => {
@@ -130,6 +113,7 @@ const CONFETTI = Array.from({ length: 16 }, (_, i) => {
   }
 })
 
+
 export default function App() {
   const [screen, setScreen] = useState<'idle' | 'result'>('idle')
   const [crateState, setCrateState] = useState<'idle' | 'shake' | 'open'>('idle')
@@ -141,6 +125,7 @@ export default function App() {
   const [firstName, setFirstName] = useState<string | null>(null)
   const [celebrate, setCelebrate] = useState(false)
   const busyRef = useRef(false)
+
 
   useEffect(() => {
     const tg = window.Telegram?.WebApp
@@ -159,19 +144,52 @@ export default function App() {
     if (user) {
       setTelegramId(user.id)
       setFirstName(user.first_name ?? null)
+
+      // Создаём / обновляем пользователя сразу при входе
+      ;(async () => {
+        await supabase.from('users').upsert({
+          telegram_id: user.id,
+          first_name: user.first_name,
+          username: user.username,
+        })
+      })()
     }
   }, [])
 
+
   useEffect(() => {
-    const existing = loadToday(telegramId)
-    if (existing) setEntry(existing)
-    // re-check once we know the real telegram id (it arrives async on mount)
+    async function checkUser() {
+      if (!telegramId) return
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('telegram_id', telegramId)
+        .single()
+
+      // PGRST116 = "no rows found" — это нормально для нового пользователя
+      if (error && error.code !== 'PGRST116') {
+        console.log(error)
+        return
+      }
+
+      if (data?.gift) {
+        setEntry({
+          rewardId: data.gift,
+          code: data.code,
+          shown: data.shown ?? false,
+          ts: Date.now(),
+        })
+      }
+    }
+    checkUser()
   }, [telegramId])
+
 
   const alreadyUsed = !!entry
   const currentReward = entry ? REWARDS.find((r) => r.id === entry.rewardId) ?? REWARDS[0] : null
 
-  function openCase() {
+
+  async function openCase() {
     if (alreadyUsed || busyRef.current) return
     busyRef.current = true
     window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('medium')
@@ -189,7 +207,7 @@ export default function App() {
         setCycling(true)
 
         let ticks = 0
-        const interval = setInterval(() => {
+        const interval = setInterval(async () => {
           const r = REWARDS[ticks % REWARDS.length]
           setPreviewIcon(r.icon)
           setPreviewName(r.name)
@@ -198,7 +216,16 @@ export default function App() {
             clearInterval(interval)
             setCycling(false)
             setEntry(newEntry)
-            saveToday(telegramId, newEntry)
+
+            // сохраняем приз в Supabase
+            await supabase.from('users').upsert({
+              telegram_id: telegramId,
+              first_name: firstName,
+              gift: reward.id,
+              code: code,
+              shown: false,
+            })
+
             busyRef.current = false
 
             const haptic = window.Telegram?.WebApp?.HapticFeedback
@@ -215,18 +242,21 @@ export default function App() {
     }, 420)
   }
 
-  function markShown() {
+
+  async function markShown() {
     if (!entry || entry.shown) return
     window.Telegram?.WebApp?.HapticFeedback?.selectionChanged()
     const updated = { ...entry, shown: true }
     setEntry(updated)
-    saveToday(telegramId, updated)
+    await supabase.from('users').update({ shown: true }).eq('telegram_id', telegramId)
   }
+
 
   function backToIdle() {
     setCrateState('idle')
     setScreen('idle')
   }
+
 
   return (
     <div className="app">
