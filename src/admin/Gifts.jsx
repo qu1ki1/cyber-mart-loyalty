@@ -2,211 +2,272 @@ import { useEffect, useState } from "react"
 import { supabase } from "../supabase"
 
 
-export default function Gifts() {
+export default function Gifts(){
 
 
-  const [gifts,setGifts] = useState([])
+const [gifts,setGifts]=useState([])
 
-  const [name,setName] = useState("")
-  const [chance,setChance] = useState("")
-  const [quantity,setQuantity] = useState("")
+const [name,setName]=useState("")
+const [chance,setChance]=useState("")
+const [quantity,setQuantity]=useState("")
 
 
-  async function loadGifts(){
 
-    const {data,error} = await supabase
-      .from("gifts")
-      .select("*")
-      .order("id")
+async function load(){
 
+const {data,error}=await supabase
+.from("gifts")
+.select("*")
+.order("id")
 
-    if(error){
-      console.log(error)
-      return
-    }
 
+if(error){
+console.log(error)
+return
+}
 
-    setGifts(data)
 
-  }
+setGifts(data)
 
+}
 
 
-  async function addGift(){
 
 
-    if(!name || !chance){
-      alert("Заполни название и шанс")
-      return
-    }
+async function addGift(){
 
 
-    const {error} = await supabase
-      .from("gifts")
-      .insert({
+const {error}=await supabase
+.from("gifts")
+.insert({
 
-        name:name,
-        chance:Number(chance),
-        quantity:Number(quantity) || 0,
-        active:true
+name,
+chance:Number(chance),
+quantity:Number(quantity),
+active:true
 
-      })
+})
 
 
-    if(error){
+if(error){
 
-      console.log(error)
-      alert("Ошибка добавления")
-      return
+console.log(error)
+alert(error.message)
+return
 
-    }
+}
 
 
-    setName("")
-    setChance("")
-    setQuantity("")
+setName("")
+setChance("")
+setQuantity("")
 
+load()
 
-    loadGifts()
+}
 
 
-  }
 
 
+async function toggleGift(id,status){
 
-  async function deleteGift(id){
 
+await supabase
+.from("gifts")
+.update({
+active:!status
+})
+.eq("id",id)
 
-    await supabase
-      .from("gifts")
-      .delete()
-      .eq("id",id)
 
+load()
 
-    loadGifts()
+}
 
-  }
 
 
 
-  useEffect(()=>{
+async function removeGift(id){
 
-    loadGifts()
 
-  },[])
+await supabase
+.from("gifts")
+.delete()
+.eq("id",id)
 
 
+load()
 
-  return (
+}
 
-    <div>
 
 
-      <h1>
-        🎁 Управление подарками
-      </h1>
 
+useEffect(()=>{
 
+load()
 
-      <div style={{
-        border:"1px solid #333",
-        padding:20,
-        borderRadius:15,
-        marginBottom:30
-      }}>
+},[])
 
 
-        <h2>
-          Добавить подарок
-        </h2>
 
 
-        <input
-        placeholder="Название"
-        value={name}
-        onChange={(e)=>setName(e.target.value)}
-        />
+return (
 
+<div>
 
-        <input
-        placeholder="Шанс %"
-        type="number"
-        value={chance}
-        onChange={(e)=>setChance(e.target.value)}
-        />
 
+<h1>
+🎁 Управление подарками
+</h1>
 
-        <input
-        placeholder="Количество"
-        type="number"
-        value={quantity}
-        onChange={(e)=>setQuantity(e.target.value)}
-        />
 
 
-        <button onClick={addGift}>
-          Добавить
-        </button>
+<div style={{
+background:"#111",
+padding:25,
+borderRadius:15,
+marginBottom:30
+}}>
 
 
-      </div>
+<h2>
+Добавить подарок
+</h2>
 
 
+<input
+placeholder="Название"
+value={name}
+onChange={e=>setName(e.target.value)}
+/>
 
 
-      <h2>
-        Список подарков
-      </h2>
+<input
+placeholder="Шанс %"
+type="number"
+value={chance}
+onChange={e=>setChance(e.target.value)}
+/>
 
 
+<input
+placeholder="Количество"
+type="number"
+value={quantity}
+onChange={e=>setQuantity(e.target.value)}
+/>
 
-      {
 
-        gifts.map((gift)=>(
 
-          <div
-          key={gift.id}
-          style={{
-            border:"1px solid #555",
-            padding:15,
-            marginBottom:10,
-            borderRadius:10
-          }}
-          >
+<button onClick={addGift}>
+➕ Добавить
+</button>
 
 
-            <h3>
-              🎁 {gift.name}
-            </h3>
+</div>
 
 
-            <p>
-              Шанс: {gift.chance}%
-            </p>
 
 
-            <p>
-              Количество: {gift.quantity}
-            </p>
+<h2>
+Список подарков
+</h2>
 
 
-            <button
-            onClick={()=>deleteGift(gift.id)}
-            >
-              🗑 Удалить
-            </button>
 
+<div style={{
+display:"grid",
+gap:20
+}}>
 
-          </div>
 
+{
 
-        ))
+gifts.map(g=>(
 
-      }
 
+<div
+key={g.id}
+style={{
+border:"1px solid #444",
+padding:20,
+borderRadius:15
+}}
+>
 
-    </div>
 
-  )
+<h2>
+🎁 {g.name}
+</h2>
+
+
+<p>
+🎯 Шанс: {g.chance}%
+</p>
+
+
+<p>
+📦 Осталось: {g.quantity}
+</p>
+
+
+<p>
+{
+g.active
+?
+"🟢 Активен"
+:
+"🔴 Выключен"
+}
+</p>
+
+
+
+<button
+onClick={()=>toggleGift(g.id,g.active)}
+>
+
+{
+g.active
+?
+"Выключить"
+:
+"Включить"
+}
+
+</button>
+
+
+
+<button
+style={{
+marginLeft:10
+}}
+onClick={()=>removeGift(g.id)}
+>
+
+🗑 Удалить
+
+</button>
+
+
+
+</div>
+
+
+))
+
+}
+
+
+</div>
+
+
+
+</div>
+
+
+)
 
 }
