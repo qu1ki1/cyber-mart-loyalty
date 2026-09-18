@@ -6,84 +6,71 @@ const supabase = createClient(
 );
 
 
-export default async function handler(req, res) {
+export default async function handler(req,res){
 
-  try {
+try {
 
-    const message = req.body?.message;
+const body = req.body;
 
-    if (!message) {
-      return res.status(200).json({
-        ok: true
-      });
-    }
+if(body.message){
 
+const chatId = body.message.chat.id;
 
-    const chatId = message.chat.id;
+const user = body.message.from;
 
 
-    await supabase
-      .from("users")
-      .upsert(
-        {
-          telegram_id: chatId,
-          username: message.from?.username || null,
-          first_name: message.from?.first_name || null,
-          attempts: 1
-        },
-        {
-          onConflict: "telegram_id"
-        }
-      );
+await supabase
+.from("users")
+.upsert({
+ telegram_id:user.id,
+ username:user.username,
+ first_name:user.first_name
+},{
+ onConflict:"telegram_id"
+});
 
 
-    if (message.text === "/start") {
+await fetch(
+`https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendMessage`,
+{
+method:"POST",
+headers:{
+"Content-Type":"application/json"
+},
+body:JSON.stringify({
+chat_id:chatId,
+text:"🎮 CYBER MART\n\nТвой подарок за визит 👇",
+reply_markup:{
+inline_keyboard:[
+[
+{
+text:"🎁 Получить подарок",
+web_app:{
+url:"https://cyber-mart-loyalty.vercel.app"
+}
+}
+]
+]
+}
+})
+}
+);
 
-      await fetch(
-        `https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendMessage`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            chat_id: chatId,
-            text:
-              "🎮 CYBER MART\n\nТвой подарок за визит 👇",
-            reply_markup: {
-              inline_keyboard: [
-                [
-                  {
-                    text: "🎁 Получить подарок",
-                    web_app: {
-                      url:
-                        "https://cyber-mart-loyalty.vercel.app"
-                    }
-                  }
-                ]
-              ]
-            }
-          })
-        }
-      );
+}
 
-    }
-
-
-    return res.status(200).json({
-      ok:true
-    });
+return res.status(200).json({
+ok:true
+});
 
 
-  } catch(error){
+}catch(e){
 
-    console.log(error);
+console.log(e);
 
-    return res.status(500).json({
-      ok:false,
-      error:error.message
-    });
+return res.status(500).json({
+error:e.message
+});
 
-  }
+}
 
 }
