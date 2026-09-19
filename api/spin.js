@@ -87,7 +87,7 @@ export default async function handler(req, res) {
         already_spun: true,
         gift_name: existing.gift_name,
         rarity: existing.gifts?.rarity ?? 'rare',
-        icon: existing.gifts?.icon ?? 'gift',
+        icon: existing.gifts?.icon ?? 'star',
         code: existing.code,
         redeemed: existing.redeemed,
         expires_at: existing.expires_at,
@@ -132,7 +132,7 @@ export default async function handler(req, res) {
       already_spun: false,
       gift_name: winner.name,
       rarity: winner.rarity || 'rare',
-      icon: winner.icon || 'gift',
+      icon: winner.icon || 'star',
       code,
       expires_at: expiresAt,
     })

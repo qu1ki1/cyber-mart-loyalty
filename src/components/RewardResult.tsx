@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { motion } from 'framer-motion'
+import { Icon, type IconKey } from './Icon'
 import type { Rarity } from './Reel'
 
 const TIER_LABEL: Record<Rarity, string> = {
@@ -20,12 +21,13 @@ type Props = {
   gift: string
   code: string
   rarity: Rarity
+  icon: IconKey
   expiresAt?: string
   redeemed?: boolean
   onClose: () => void
 }
 
-export default function RewardResult({ gift, code, rarity, expiresAt, redeemed, onClose }: Props) {
+export default function RewardResult({ gift, code, rarity, icon, expiresAt, redeemed, onClose }: Props) {
   useEffect(() => {
     window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success')
   }, [])
@@ -39,7 +41,9 @@ export default function RewardResult({ gift, code, rarity, expiresAt, redeemed, 
       transition={{ duration: 0.25 }}
       style={{ '--tier-color': `var(--r-${rarity})` } as React.CSSProperties}
     >
-      <div className="reward-badge">🎁</div>
+      <div className="reward-badge">
+        <Icon icon={icon} />
+      </div>
       <div className="reward-name">{gift}</div>
       <div className="reward-tier">{TIER_LABEL[rarity]}</div>
 

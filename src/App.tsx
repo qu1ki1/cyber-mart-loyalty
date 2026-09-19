@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import CaseBox from './components/CaseBox'
 import Reel, { type Rarity } from './components/Reel'
 import RewardResult from './components/RewardResult'
+import type { IconKey } from './components/Icon'
 
 import './App.css'
 
@@ -13,6 +14,7 @@ type SpinResult = {
   already_spun: boolean
   gift_name?: string
   rarity?: Rarity
+  icon?: IconKey
   code?: string
   expires_at?: string
   redeemed?: boolean
@@ -93,11 +95,11 @@ export default function App() {
       <header>
         <div>
           <div className="wordmark">
-            CYBER<span>MART</span>
+            LOYAL<span>TY</span>
           </div>
           {telegramUser?.first_name && <div className="greeting">Привет, {telegramUser.first_name}</div>}
         </div>
-        <div className="biz-pill">LOYALTY</div>
+        <div className="biz-pill">CYBER MART</div>
       </header>
 
       <main>
@@ -131,9 +133,8 @@ export default function App() {
 
           {screen === 'roll' && result && (
             <motion.div key="roll" className="cyber-card" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <h1>Открываем…</h1>
-              <CaseBox opening={true} />
-              <Reel winner={{ name: result.gift_name!, rarity: result.rarity! }} onDone={() => setScreen('result')} />
+              <div className="reel-title">ОТКРЫВАЕМ КЕЙС…</div>
+              <Reel winner={{ name: result.gift_name!, rarity: result.rarity!, icon: result.icon! }} onDone={() => setScreen('result')} />
             </motion.div>
           )}
 
@@ -143,6 +144,7 @@ export default function App() {
               gift={result.gift_name!}
               code={result.code!}
               rarity={result.rarity!}
+              icon={result.icon!}
               expiresAt={result.expires_at}
               redeemed={result.redeemed}
               onClose={() => setScreen('open')}

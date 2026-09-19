@@ -1,20 +1,22 @@
 import { useEffect, useRef, useState } from 'react'
+import { Icon, type IconKey } from './Icon'
 
 export type Rarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary'
 
 export type ReelPrize = {
   name: string
   rarity: Rarity
+  icon: IconKey
 }
 
 // Only used to fill out the strip visually — the real prize (passed in as
 // `winner`) is what the reel actually lands on.
 const FILLERS: ReelPrize[] = [
-  { name: '+30 мин', rarity: 'common' },
-  { name: '+1 час', rarity: 'uncommon' },
-  { name: 'Напиток', rarity: 'rare' },
-  { name: 'Скидка 10%', rarity: 'epic' },
-  { name: 'Джекпот', rarity: 'legendary' },
+  { name: '+30 минут игры', rarity: 'common', icon: 'clock' },
+  { name: '+1 час игры', rarity: 'uncommon', icon: 'clockBig' },
+  { name: 'Бесплатный напиток', rarity: 'rare', icon: 'cup' },
+  { name: 'Скидка 10%', rarity: 'epic', icon: 'percent' },
+  { name: 'Джекпот', rarity: 'legendary', icon: 'star' },
 ]
 
 const ITEM_WIDTH = 88
@@ -42,7 +44,6 @@ export default function Reel({ winner, onDone }: { winner: ReelPrize; onDone: ()
     const jitter = (Math.random() - 0.5) * (ITEM_WIDTH * 0.5)
     const target = -(itemCenter - width / 2) + jitter
 
-    // Kick the transition off on the next frame so the track first renders at x=0.
     const raf = requestAnimationFrame(() => setX(target))
     const timeout = setTimeout(onDone, 3700)
 
@@ -58,8 +59,12 @@ export default function Reel({ winner, onDone }: { winner: ReelPrize; onDone: ()
       <div className="reel-marker" />
       <div className="reel-track" style={{ transform: `translateX(${x}px)` }}>
         {items.map((item, i) => (
-          <div key={i} className={`reel-item tier-${item.rarity} ${i === TARGET_INDEX ? 'reel-item-winner' : ''}`}>
-            <span>{item.name}</span>
+          <div
+            key={i}
+            className={`reel-item ${i === TARGET_INDEX ? 'won' : ''}`}
+            style={{ '--tier-color': `var(--r-${item.rarity})` } as React.CSSProperties}
+          >
+            <Icon icon={item.icon} />
           </div>
         ))}
       </div>

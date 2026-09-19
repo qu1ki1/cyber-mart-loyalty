@@ -1,6 +1,7 @@
 import { useState } from 'react'
 
 const SESSION_KEY = 'cyberMartAdminUnlocked'
+export const ADMIN_PASSWORD_KEY = 'cyberMartAdminPassword'
 
 export default function AdminGate({ children }: { children: React.ReactNode }) {
   const [unlocked, setUnlocked] = useState(() => sessionStorage.getItem(SESSION_KEY) === '1')
@@ -22,6 +23,9 @@ export default function AdminGate({ children }: { children: React.ReactNode }) {
 
       if (res.ok) {
         sessionStorage.setItem(SESSION_KEY, '1')
+        // Нужен для последующих запросов (погасить код, выдать попытку) —
+        // они каждый раз сами проверяют пароль на сервере.
+        sessionStorage.setItem(ADMIN_PASSWORD_KEY, password)
         setUnlocked(true)
       } else {
         setError('Неверный пароль')
