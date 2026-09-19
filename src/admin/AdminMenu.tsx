@@ -1,3 +1,13 @@
+import {
+  LayoutDashboard,
+  Users,
+  Gift,
+  Trophy,
+  Settings
+} from "lucide-react";
+
+
+
 export default function AdminMenu(){
 
 
@@ -10,32 +20,36 @@ const tabs=[
 
 {
 url:"/admin",
-icon:"📊",
-name:"Главная"
+title:"Главная",
+icon:<LayoutDashboard size={20}/>
 },
+
 
 {
 url:"/admin/users",
-icon:"👥",
-name:"Люди"
+title:"Пользователи",
+icon:<Users size={20}/>
 },
+
 
 {
 url:"/admin/gifts",
-icon:"🎁",
-name:"Призы"
+title:"Призы",
+icon:<Gift size={20}/>
 },
+
 
 {
 url:"/admin/winners",
-icon:"🏆",
-name:"Победы"
+title:"Победы",
+icon:<Trophy size={20}/>
 },
+
 
 {
 url:"/admin/settings",
-icon:"⚙️",
-name:"Настройки"
+title:"Настройки",
+icon:<Settings size={20}/>
 }
 
 ];
@@ -43,17 +57,16 @@ name:"Настройки"
 
 
 
+
 return (
 
-<header
-
-className="admin-top"
-
->
+<header className="admin-menu">
 
 
-<div className="admin-logo">
+<div className="admin-brand">
 
+
+<div className="brand-main">
 
 CYBER
 
@@ -61,10 +74,14 @@ CYBER
 MART
 </span>
 
+</div>
 
-<small>
-ADMIN
-</small>
+
+<div className="brand-sub">
+
+ADMIN PANEL
+
+</div>
 
 
 </div>
@@ -87,11 +104,17 @@ key={tab.url}
 href={tab.url}
 
 className={
+
 path===tab.url
+
 ?
+
 "active"
+
 :
+
 ""
+
 }
 
 >
@@ -104,9 +127,10 @@ path===tab.url
 </div>
 
 
-<div className="tab-name">
 
-{tab.name}
+<div className="tab-title">
+
+{tab.title}
 
 </div>
 
@@ -115,6 +139,7 @@ path===tab.url
 
 
 ))
+
 }
 
 
@@ -122,24 +147,34 @@ path===tab.url
 
 
 
+
+
+
 <style>{`
 
-.admin-top{
+.admin-menu{
+
+
+position:relative;
 
 
 display:flex;
 
+
 align-items:center;
+
 
 justify-content:space-between;
 
 
-padding:15px 20px;
+padding:16px 22px;
+
 
 
 background:
 
-rgba(255,255,255,.035);
+rgba(10,12,12,.75);
+
 
 
 border:
@@ -147,12 +182,15 @@ border:
 1px solid var(--line-dim);
 
 
-border-radius:22px;
+
+border-radius:24px;
+
 
 
 backdrop-filter:
 
 blur(20px);
+
 
 
 margin-bottom:20px;
@@ -162,26 +200,27 @@ margin-bottom:20px;
 
 
 
-.admin-logo{
+
+.brand-main{
 
 
 font-family:Rajdhani;
 
 
-font-size:24px;
+font-weight:900;
 
 
-font-weight:800;
+font-size:26px;
 
 
-letter-spacing:.12em;
+letter-spacing:5px;
 
 
 }
 
 
 
-.admin-logo span{
+.brand-main span{
 
 
 color:var(--neon);
@@ -191,22 +230,20 @@ color:var(--neon);
 
 
 
-.admin-logo small{
 
-
-display:block;
-
-
-font-family:Inter;
+.brand-sub{
 
 
 font-size:10px;
 
 
-letter-spacing:.4em;
+letter-spacing:4px;
 
 
 color:var(--muted);
+
+
+margin-top:4px;
 
 
 }
@@ -214,7 +251,7 @@ color:var(--muted);
 
 
 
-.admin-top nav{
+.admin-menu nav{
 
 
 display:flex;
@@ -227,13 +264,15 @@ gap:8px;
 
 
 
-.admin-top a{
+
+.admin-menu a{
 
 
-width:65px;
+width:72px;
 
 
-height:60px;
+height:62px;
+
 
 
 display:flex;
@@ -248,16 +287,17 @@ justify-content:center;
 align-items:center;
 
 
+
 text-decoration:none;
 
-
-border-radius:16px;
 
 
 color:var(--muted);
 
 
-transition:.25s;
+
+border-radius:16px;
+
 
 
 border:
@@ -265,39 +305,52 @@ border:
 1px solid transparent;
 
 
+
+transition:.25s;
+
+
 }
 
 
 
-.admin-top a:hover{
+
+.admin-menu a:hover{
 
 
 transform:translateY(-3px);
 
 
+color:white;
+
+
 }
 
 
 
-.admin-top a.active{
+
+.admin-menu a.active{
 
 
-color:var(--cyan);
+color:var(--neon);
+
 
 
 background:
 
-rgba(57,217,255,.08);
+rgba(57,255,138,.08);
+
 
 
 border-color:
 
-rgba(57,217,255,.35);
+rgba(57,255,138,.35);
+
 
 
 box-shadow:
 
-0 0 25px rgba(57,217,255,.18);
+0 0 30px rgba(57,255,138,.2);
+
 
 
 }
@@ -305,21 +358,20 @@ box-shadow:
 
 
 
-.tab-icon{
-
-font-size:23px;
-
-}
+.tab-title{
 
 
+font-size:10px;
 
-.tab-name{
 
-font-size:9px;
+margin-top:5px;
 
-margin-top:4px;
+
+text-align:center;
+
 
 }
+
 
 
 
@@ -327,7 +379,8 @@ margin-top:4px;
 @media(max-width:700px){
 
 
-.admin-top{
+
+.admin-menu{
 
 
 flex-direction:column;
@@ -336,19 +389,26 @@ flex-direction:column;
 gap:15px;
 
 
-}
-
-
-.admin-logo{
-
-
-font-size:20px;
+padding:15px 10px;
 
 
 }
 
 
-.admin-top nav{
+
+
+.brand-main{
+
+
+font-size:22px;
+
+
+}
+
+
+
+
+.admin-menu nav{
 
 
 width:100%;
@@ -361,22 +421,35 @@ justify-content:space-around;
 
 
 
-.admin-top a{
+.admin-menu a{
 
 
-width:55px;
+width:58px;
 
 
-height:50px;
+height:55px;
+
+
+}
+
+
+
+.tab-title{
+
+
+font-size:9px;
 
 
 }
 
 
+
 }
+
 
 
 `}</style>
+
 
 
 </header>

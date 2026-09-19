@@ -24,14 +24,31 @@ useState(true);
 useEffect(()=>{
 
 
-getUsers()
-
-.then(setUsers)
-
-.finally(()=>setLoading(false));
+load();
 
 
 },[]);
+
+
+
+
+
+async function load(){
+
+
+const data =
+await getUsers();
+
+
+setUsers(data);
+
+
+setLoading(false);
+
+
+}
+
+
 
 
 
@@ -57,9 +74,8 @@ y:0
 >
 
 
-
 <h1>
-👥 Пользователи
+USERS
 </h1>
 
 
@@ -68,23 +84,27 @@ style={{
 color:"var(--muted)"
 }}
 >
-Список участников CYBER MART
+Участники программы лояльности
 </p>
 
 
 
 
 
+
 {
+
 loading
 
 ?
 
+
 <div className="admin-card">
 
-Загрузка...
+Loading...
 
 </div>
+
 
 
 :
@@ -95,8 +115,7 @@ loading
 
 {
 
-users.map(
-(user,index)=>(
+users.map((user,index)=>(
 
 
 <motion.div
@@ -111,45 +130,92 @@ opacity:0,
 scale:.9
 }}
 
+
 animate={{
 opacity:1,
 scale:1
 }}
 
+
 transition={{
+
 delay:index*.04
+
 }}
 
 >
 
 
-<div className="user-head">
+<div className="user-top">
 
 
 <div className="avatar">
 
-👤
+
+<svg
+
+viewBox="0 0 24 24"
+
+fill="none"
+
+>
+
+
+<circle
+
+cx="12"
+
+cy="8"
+
+r="4"
+
+stroke="currentColor"
+
+/>
+
+
+<path
+
+d="M4 21c0-4 3-7 8-7s8 3 8 7"
+
+stroke="currentColor"
+
+/>
+
+
+</svg>
+
 
 </div>
+
+
+
 
 
 <div>
 
 
-<h3>
+<h2>
 
 {
 user.first_name
 ||
-"Без имени"
+"Unknown"
 }
 
-</h3>
+</h2>
+
 
 
 <span>
 
-@{user.username || "username"}
+@
+
+{
+user.username
+||
+"user"
+}
 
 </span>
 
@@ -163,33 +229,52 @@ user.first_name
 
 
 
-<div className="user-info">
+
+
+<div className="user-stats">
 
 
 <div>
 
-<p>ID</p>
+
+<label>
+Telegram
+</label>
+
 
 <strong>
+
 {user.telegram_id}
+
 </strong>
 
+
 </div>
+
 
 
 
 <div>
 
-<p>Попытки</p>
+
+<label>
+Attempts
+</label>
+
 
 <strong>
+
 {user.attempts || 0}
+
 </strong>
 
+
 </div>
 
 
+
 </div>
+
 
 
 
@@ -197,13 +282,23 @@ user.first_name
 
 
 {
+
 user.gift &&
 
 
-<div className="gift-result">
+<div className="user-gift">
 
 
-🎁 {user.gift}
+WIN:
+
+<br/>
+
+
+<strong>
+
+{user.gift}
+
+</strong>
 
 
 </div>
@@ -220,7 +315,9 @@ user.gift &&
 
 ))
 
+
 }
+
 
 
 </div>
@@ -248,7 +345,7 @@ minmax(260px,1fr)
 );
 
 
-gap:18px;
+gap:20px;
 
 
 }
@@ -256,31 +353,7 @@ gap:18px;
 
 
 
-.user-card{
-
-
-transition:.25s;
-
-
-}
-
-
-
-.user-card:hover{
-
-
-transform:
-
-translateY(-5px);
-
-
-
-}
-
-
-
-
-.user-head{
+.user-top{
 
 
 display:flex;
@@ -317,17 +390,28 @@ align-items:center;
 justify-content:center;
 
 
-font-size:25px;
-
 
 background:
 
-rgba(57,255,138,.1);
+rgba(57,255,138,.08);
 
 
-border:
 
-1px solid var(--line);
+color:var(--neon);
+
+
+
+}
+
+
+
+.avatar svg{
+
+
+width:30px;
+
+
+height:30px;
 
 
 }
@@ -335,23 +419,23 @@ border:
 
 
 
-.user-head h3{
-
-
-margin:0;
+.user-card h2{
 
 
 font-family:Rajdhani;
 
 
-font-size:22px;
+margin:0;
+
+
+font-size:25px;
 
 
 }
 
 
 
-.user-head span{
+.user-card span{
 
 
 color:var(--muted);
@@ -365,8 +449,7 @@ font-size:13px;
 
 
 
-
-.user-info{
+.user-stats{
 
 
 display:flex;
@@ -382,32 +465,30 @@ margin-top:25px;
 
 
 
-.user-info p{
+
+.user-stats label{
+
+
+display:block;
+
+
+font-size:11px;
 
 
 color:var(--muted);
 
 
-font-size:12px;
-
-
-margin:0;
-
-
 }
 
 
 
-.user-info strong{
+.user-stats strong{
 
 
-font-family:Rajdhani;
+font-size:18px;
 
 
-font-size:24px;
-
-
-color:var(--neon);
+color:var(--cyan);
 
 
 }
@@ -415,17 +496,17 @@ color:var(--neon);
 
 
 
-
-.gift-result{
+.user-gift{
 
 
 margin-top:20px;
 
 
-padding:12px;
+padding:15px;
 
 
 border-radius:14px;
+
 
 
 background:
@@ -433,9 +514,11 @@ background:
 rgba(57,255,138,.08);
 
 
+
 border:
 
-1px solid var(--line);
+1px solid rgba(57,255,138,.2);
+
 
 
 color:var(--neon);
@@ -443,22 +526,6 @@ color:var(--neon);
 
 }
 
-
-
-
-@media(max-width:600px){
-
-
-.users-grid{
-
-
-grid-template-columns:1fr;
-
-
-}
-
-
-}
 
 
 `}</style>

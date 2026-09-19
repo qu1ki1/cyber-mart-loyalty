@@ -3,6 +3,10 @@ import { AnimatePresence, motion } from "framer-motion";
 
 import { supabase } from "./supabase";
 
+import CaseBox from "./components/CaseBox";
+import Reel from "./components/Reel";
+import RewardResult from "./components/RewardResult";
+
 
 
 type Gift = {
@@ -15,13 +19,29 @@ chance:number;
 
 quantity:number;
 
+active:boolean;
+
 };
 
 
 
+function generateCode(){
+
+return (
+
+"CM-" +
+
+Math.floor(
+1000 + Math.random()*9000
+)
+
+);
+
+}
 
 
-function randomGift(gifts:Gift[]){
+
+function chooseGift(gifts:Gift[]){
 
 
 const total =
@@ -32,7 +52,7 @@ gifts.reduce(
 
 
 
-let value =
+let random =
 Math.random()*total;
 
 
@@ -40,11 +60,14 @@ Math.random()*total;
 for(const gift of gifts){
 
 
-value-=gift.chance;
+random -= gift.chance;
 
 
-if(value<=0)
+if(random<=0){
+
 return gift;
+
+}
 
 
 }
@@ -59,26 +82,8 @@ return gifts[0];
 
 
 
-function generateCode(){
-
-return (
-
-"CM-" +
-
-Math.floor(
-1000+
-Math.random()*9000
-)
-
-);
-
-}
-
-
-
-
-
 export default function App(){
+
 
 
 const [user,setUser]=
@@ -103,6 +108,7 @@ useState("");
 
 const lock =
 useRef(false);
+
 
 
 
@@ -139,14 +145,19 @@ setUser(tgUser);
 
 
 supabase
+
 .from("users")
+
 .upsert({
 
-telegram_id:tgUser.id,
+telegram_id:
+tgUser.id,
 
-first_name:tgUser.first_name,
+first_name:
+tgUser.first_name,
 
-username:tgUser.username
+username:
+tgUser.username
 
 });
 
@@ -162,7 +173,9 @@ username:tgUser.username
 
 
 
+
 async function openCase(){
+
 
 
 if(lock.current)
@@ -173,9 +186,11 @@ return;
 lock.current=true;
 
 
+
 setOpening(true);
 
 setGift(null);
+
 
 
 
@@ -201,14 +216,14 @@ throw error;
 
 
 
-if(!data?.length)
+if(!data || data.length===0)
 throw new Error();
 
 
 
+const winner =
+chooseGift(data);
 
-const win =
-randomGift(data);
 
 
 
@@ -219,13 +234,13 @@ await supabase
 .update({
 
 quantity:
-win.quantity-1
+winner.quantity-1
 
 })
 
 .eq(
 "id",
-win.id
+winner.id
 );
 
 
@@ -237,11 +252,14 @@ await supabase
 
 .insert({
 
-telegram_id:user?.id,
+telegram_id:
+user?.id,
 
-gift_id:win.id,
+gift_id:
+winner.id,
 
-gift_name:win.name
+gift_name:
+winner.name
 
 });
 
@@ -252,14 +270,17 @@ gift_name:win.name
 setTimeout(()=>{
 
 
-setGift(win);
+setGift(winner);
 
-setCode(generateCode());
+setCode(
+generateCode()
+);
+
 
 setOpening(false);
 
 
-},2000);
+},3000);
 
 
 
@@ -267,17 +288,20 @@ setOpening(false);
 
 catch(e){
 
-console.log(e);
+console.error(e);
 
 setOpening(false);
 
 }
 
 
+
 lock.current=false;
 
 
+
 }
+
 
 
 
@@ -295,13 +319,19 @@ return (
 
 
 
+
 <header
 
 style={{
+
 position:"relative",
+
 zIndex:2,
+
 textAlign:"center",
-padding:"30px 20px"
+
+padding:"35px 20px"
+
 }}
 
 >
@@ -309,12 +339,16 @@ padding:"30px 20px"
 
 <div
 
-className="logo"
-
 style={{
-fontSize:32,
-fontWeight:800,
-letterSpacing:4
+
+fontFamily:"Rajdhani",
+
+fontSize:34,
+
+fontWeight:900,
+
+letterSpacing:6
+
 }}
 
 >
@@ -322,11 +356,17 @@ letterSpacing:4
 CYBER
 
 <span
+
 style={{
+
 color:"var(--neon)"
+
 }}
+
 >
+
  MART
+
 </span>
 
 
@@ -334,15 +374,22 @@ color:"var(--neon)"
 
 
 
-<p
+<div
+
 style={{
-color:"var(--muted)"
+
+color:"var(--muted)",
+
+marginTop:10
+
 }}
+
 >
 
-Привет, {user?.first_name || "Игрок"}
+{user?.first_name || "PLAYER"}
 
-</p>
+</div>
+
 
 
 </header>
@@ -356,9 +403,13 @@ color:"var(--muted)"
 <main
 
 style={{
+
 position:"relative",
+
 zIndex:2,
-padding:20
+
+padding:"0 20px"
+
 }}
 
 >
@@ -368,37 +419,49 @@ padding:20
 <AnimatePresence mode="wait">
 
 
+
 {
 
 !gift &&
 
-
 <motion.div
 
-key="case"
+key="open"
 
 className="cyber-card"
 
 initial={{
+
 opacity:0,
-scale:.9
+
+y:30
+
 }}
 
 animate={{
+
 opacity:1,
-scale:1
+
+y:0
+
 }}
-
-
 
 >
 
 
+
 <h1
+
 style={{
+
 textAlign:"center",
-fontFamily:"Rajdhani"
+
+fontFamily:"Rajdhani",
+
+fontSize:32
+
 }}
+
 >
 
 Твой подарок за визит
@@ -408,56 +471,41 @@ fontFamily:"Rajdhani"
 
 
 
-
-<motion.div
-
-animate={
-
-opening
-
-?
-
-{
-
-rotate:[0,-5,5,-5,0],
-
-scale:[1,1.05,1]
-
-}
-
-:
-
-{
-
-y:[0,-10,0]
-
-}
-
-}
-
-transition={{
-
-duration:1,
-
-repeat:opening?Infinity:0
-
-}}
+<div
 
 style={{
 
-fontSize:120,
+display:"flex",
 
-textAlign:"center",
+justifyContent:"center",
 
-margin:"40px 0"
+margin:"35px 0"
 
 }}
 
 >
 
-🎁
 
-</motion.div>
+<CaseBox
+
+opening={opening}
+
+/>
+
+
+</div>
+
+
+
+
+
+{
+
+opening &&
+
+<Reel/>
+
+}
 
 
 
@@ -467,9 +515,17 @@ margin:"40px 0"
 
 className="cyber-button"
 
-onClick={openCase}
+style={{
+
+width:"100%",
+
+marginTop:25
+
+}}
 
 disabled={opening}
+
+onClick={openCase}
 
 >
 
@@ -479,13 +535,14 @@ opening
 
 ?
 
-"Открываем..."
+"ОТКРЫТИЕ..."
 
 :
 
-"Открыть кейс"
+"ОТКРЫТЬ КЕЙС"
 
 }
+
 
 </button>
 
@@ -493,11 +550,7 @@ opening
 
 </motion.div>
 
-
 }
-
-
-
 
 
 
@@ -509,143 +562,34 @@ gift &&
 
 <motion.div
 
-key="win"
-
-className="cyber-card"
-
+key="result"
 
 initial={{
 
-scale:.5,
+opacity:0,
 
-opacity:0
+scale:.8
 
 }}
-
 
 animate={{
 
-scale:1,
+opacity:1,
 
-opacity:1
-
-}}
-
-
-
->
-
-
-<h1
-
-style={{
-
-textAlign:"center",
-
-color:"var(--neon)"
+scale:1
 
 }}
 
 >
 
-🎉 Поздравляем!
 
-</h1>
+<RewardResult
 
+gift={gift.name}
 
+code={code}
 
-<div
-
-style={{
-
-fontSize:70,
-
-textAlign:"center"
-
-}}
-
->
-
-🎁
-
-</div>
-
-
-
-<h2
-
-style={{
-
-textAlign:"center",
-
-fontFamily:"Rajdhani"
-
-}}
-
->
-
-{gift.name}
-
-</h2>
-
-
-
-<div
-
-style={{
-
-textAlign:"center",
-
-padding:15,
-
-borderRadius:14,
-
-background:"rgba(57,255,138,.08)"
-
-}}
-
->
-
-Ваш код:
-
-<br/>
-
-<strong
-
-style={{
-
-fontSize:28,
-
-color:"var(--neon)"
-
-}}
-
->
-
-{code}
-
-</strong>
-
-
-</div>
-
-
-
-<button
-
-className="cyber-button"
-
-style={{
-marginTop:20
-}}
-
-onClick={()=>setGift(null)}
-
->
-
-Назад
-
-</button>
+/>
 
 
 
@@ -653,6 +597,8 @@ onClick={()=>setGift(null)}
 
 
 }
+
+
 
 
 
@@ -668,11 +614,17 @@ onClick={()=>setGift(null)}
 <footer
 
 style={{
+
 position:"relative",
+
 zIndex:2,
+
 textAlign:"center",
+
 padding:30,
+
 color:"var(--muted)"
+
 }}
 
 >
@@ -684,7 +636,6 @@ CYBER MART LOYALTY
 
 
 </div>
-
 
 )
 

@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+
 import { supabase } from "../supabase";
+
 
 
 type Winner = {
@@ -31,14 +33,12 @@ useState(true);
 
 
 
-
 useEffect(()=>{
-
 
 load();
 
-
 },[]);
+
 
 
 
@@ -65,7 +65,7 @@ ascending:false
 
 if(error){
 
-console.error(error);
+console.log(error);
 
 return;
 
@@ -84,6 +84,7 @@ setLoading(false);
 
 
 
+
 return (
 
 <div className="admin-page">
@@ -92,13 +93,19 @@ return (
 <motion.div
 
 initial={{
+
 opacity:0,
+
 y:20
+
 }}
 
 animate={{
+
 opacity:1,
+
 y:0
+
 }}
 
 >
@@ -106,8 +113,9 @@ y:0
 
 
 <h1>
-🏆 Победы
+WINNERS
 </h1>
+
 
 
 <p
@@ -115,23 +123,30 @@ style={{
 color:"var(--muted)"
 }}
 >
-История открытий кейсов
+
+История выигрышей
+
 </p>
 
 
 
 
 
+
 {
+
 loading
+
 
 ?
 
+
 <div className="admin-card">
 
-Загрузка...
+Loading...
 
 </div>
+
 
 
 :
@@ -140,66 +155,123 @@ loading
 <div className="winner-grid">
 
 
+
 {
-winners.map(
-(winner,index)=>(
+
+winners.map((win,index)=>(
 
 
 <motion.div
 
-key={winner.id}
+key={win.id}
 
 className="admin-card winner-card"
 
 
 initial={{
+
 opacity:0,
-x:-20
+
+x:-30
+
 }}
 
 animate={{
+
 opacity:1,
+
 x:0
+
 }}
 
 transition={{
+
 delay:index*.05
+
 }}
 
 >
 
 
 
-<div className="winner-icon">
+<div className="trophy">
 
-🏆
+
+<svg
+
+viewBox="0 0 24 24"
+
+fill="none"
+
+>
+
+
+<path
+
+d="M8 4h8v6a4 4 0 01-8 0V4"
+
+stroke="currentColor"
+
+strokeWidth="1.5"
+
+/>
+
+
+<path
+
+d="M6 4H3v2a5 5 0 005 5"
+
+stroke="currentColor"
+
+strokeWidth="1.5"
+
+/>
+
+
+<path
+
+d="M18 4h3v2a5 5 0 01-5 5"
+
+stroke="currentColor"
+
+strokeWidth="1.5"
+
+/>
+
+
+</svg>
+
 
 </div>
 
 
 
 
+
 <h2>
 
-{winner.gift_name}
+{win.gift_name}
 
 </h2>
 
 
 
-<div className="winner-info">
 
 
-<p>
 
-Telegram ID
+<div className="winner-data">
 
-</p>
+
+<div>
+
+<span>
+USER ID
+</span>
 
 
 <strong>
 
-{winner.telegram_id}
+{win.telegram_id}
 
 </strong>
 
@@ -209,24 +281,32 @@ Telegram ID
 
 
 
+<div>
 
-<div className="date">
+<span>
+DATE
+</span>
 
 
-🕒
-
+<strong>
 
 {
 new Date(
-winner.created_at
+win.created_at
 )
-.toLocaleString(
+.toLocaleDateString(
 "ru-RU"
 )
 }
 
+</strong>
+
 
 </div>
+
+
+</div>
+
 
 
 
@@ -234,6 +314,8 @@ winner.created_at
 
 
 ))
+
+
 }
 
 
@@ -242,6 +324,7 @@ winner.created_at
 
 
 }
+
 
 
 
@@ -262,7 +345,7 @@ minmax(260px,1fr)
 );
 
 
-gap:18px;
+gap:20px;
 
 
 }
@@ -285,15 +368,15 @@ rgba(255,215,80,.25);
 .winner-card:hover{
 
 
-transform:
-
-translateY(-5px);
-
-
-
 box-shadow:
 
 0 0 40px rgba(255,215,80,.15);
+
+
+
+transform:
+
+translateY(-5px);
 
 
 
@@ -301,10 +384,50 @@ box-shadow:
 
 
 
-.winner-icon{
+
+.trophy{
 
 
-font-size:42px;
+width:60px;
+
+
+height:60px;
+
+
+display:flex;
+
+
+align-items:center;
+
+
+justify-content:center;
+
+
+
+color:#ffd85a;
+
+
+background:
+
+rgba(255,215,80,.08);
+
+
+
+border-radius:18px;
+
+
+
+}
+
+
+
+.trophy svg{
+
+
+width:35px;
+
+
+height:35px;
 
 
 }
@@ -320,69 +443,50 @@ font-family:Rajdhani;
 font-size:26px;
 
 
-margin:15px 0;
+margin-top:20px;
 
 
 }
 
 
 
-.winner-info p{
+
+.winner-data{
+
+
+margin-top:20px;
+
+
+display:flex;
+
+
+justify-content:space-between;
+
+
+}
+
+
+
+.winner-data span{
+
+
+display:block;
+
+
+font-size:11px;
 
 
 color:var(--muted);
 
 
-font-size:12px;
-
-
-margin:0;
-
-
 }
 
 
 
-.winner-info strong{
+.winner-data strong{
 
 
 color:var(--cyan);
-
-
-font-size:18px;
-
-
-}
-
-
-
-.date{
-
-
-margin-top:18px;
-
-
-color:var(--muted);
-
-
-font-size:13px;
-
-
-}
-
-
-
-
-@media(max-width:600px){
-
-
-.winner-grid{
-
-
-grid-template-columns:1fr;
-
-
-}
 
 
 }

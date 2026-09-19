@@ -8,15 +8,88 @@ import {
 
 
 
+function Counter({
+
+value
+
+}:{
+
+value:number
+
+}){
+
+
+const [count,setCount]=useState(0);
+
+
+
+useEffect(()=>{
+
+
+let start=0;
+
+
+const step =
+Math.ceil(value/30);
+
+
+
+const timer=setInterval(()=>{
+
+
+start += step;
+
+
+
+if(start>=value){
+
+setCount(value);
+
+clearInterval(timer);
+
+}
+
+else{
+
+setCount(start);
+
+}
+
+
+
+},30);
+
+
+
+return()=>clearInterval(timer);
+
+
+},[value]);
+
+
+
+return <>{count}</>;
+
+}
+
+
+
+
+
+
+
 export default function Dashboard(){
 
 
-const [users,setUsers] =
+const [users,setUsers]=
 useState<User[]>([]);
 
 
-const [loading,setLoading] =
+
+const [loading,setLoading]=
 useState(true);
+
+
 
 
 
@@ -37,42 +110,61 @@ getUsers()
 
 
 
+
 const stats=[
 
 
 {
-title:"Пользователи",
+
+title:"TOTAL USERS",
+
 value:users.length,
-icon:"👥",
-color:"var(--neon)"
+
+type:"users"
+
 },
 
 
 {
-title:"Выдано подарков",
+
+title:"REWARDS",
+
 value:
+
 users.filter(
 u=>u.gift
 ).length,
-icon:"🎁",
-color:"var(--cyan)"
+
+type:"rewards"
+
 },
 
 
+
 {
-title:"Попытки",
+
+title:"ATTEMPTS",
+
 value:
+
 users.reduce(
+
 (sum,u)=>
+
 sum+(u.attempts||0),
+
 0
+
 ),
-icon:"🎯",
-color:"#ffd166"
+
+type:"attempts"
+
 }
 
 
 ];
+
+
 
 
 
@@ -84,38 +176,45 @@ return (
 <div className="admin-page">
 
 
-
 <motion.div
 
 initial={{
+
 opacity:0,
+
 y:20
+
 }}
 
 animate={{
+
 opacity:1,
+
 y:0
+
 }}
 
 >
-
 
 
 <h1>
 
-📊 Дашборд
+DASHBOARD
 
 </h1>
 
 
-
 <p
+
 style={{
+
 color:"var(--muted)"
+
 }}
+
 >
 
-CYBER MART статистика
+CYBER MART CONTROL CENTER
 
 </p>
 
@@ -124,97 +223,93 @@ CYBER MART статистика
 
 
 {
+
 loading
+
 
 ?
 
 <div className="admin-card">
 
-Загрузка...
+Loading...
 
 </div>
+
 
 
 :
 
 
-<div className="stats-grid">
+<div className="dashboard-grid">
+
+
+
 
 
 {
-stats.map(
-(stat,index)=>(
+
+stats.map((item,index)=>(
 
 
 <motion.div
 
-key={stat.title}
+key={item.title}
 
-className="admin-card"
+className="admin-card stat-box"
 
 
 initial={{
-opacity:0,
-scale:.8
-}}
 
+opacity:0,
+
+scale:.85
+
+}}
 
 animate={{
-opacity:1,
-scale:1
-}}
 
+opacity:1,
+
+scale:1
+
+}}
 
 transition={{
-delay:index*.1
+
+delay:index*.12
+
 }}
 
 >
 
 
-<div
-style={{
-fontSize:40
-}}
->
 
-{stat.icon}
+<div className="stat-line">
 
 </div>
 
 
 
-<p
-style={{
-color:"var(--muted)"
-}}
->
+<p>
 
-{stat.title}
+{item.title}
 
 </p>
 
 
 
-<div
+<strong>
 
-style={{
 
-fontFamily:"Rajdhani",
+<Counter
 
-fontSize:45,
+value={item.value}
 
-fontWeight:800,
+/>
 
-color:stat.color
 
-}}
+</strong>
 
->
-
-{stat.value}
-
-</div>
 
 
 
@@ -222,7 +317,11 @@ color:stat.color
 
 
 ))
+
+
 }
+
+
 
 
 
@@ -233,25 +332,94 @@ color:stat.color
 
 
 
+
+
+
+<div className="admin-card activity">
+
+
+<h2>
+
+SYSTEM STATUS
+
+</h2>
+
+
+
+<div className="status-row">
+
+
+<div>
+
+DATABASE
+
+</div>
+
+
+<span>
+
+ONLINE
+
+</span>
+
+
+</div>
+
+
+
+
+<div className="status-row">
+
+
+<div>
+
+TELEGRAM API
+
+</div>
+
+
+<span>
+
+ONLINE
+
+</span>
+
+
+</div>
+
+
+
+<div className="status-row">
+
+
+<div>
+
+MINI APP
+
+</div>
+
+
+<span>
+
+ACTIVE
+
+</span>
+
+
+</div>
+
+
+
+</div>
+
+
+
+
+
+
 <style>{`
 
-.admin-page h1{
-
-
-font-family:Rajdhani;
-
-
-font-size:34px;
-
-
-margin-bottom:5px;
-
-
-}
-
-
-
-.stats-grid{
+.dashboard-grid{
 
 
 display:grid;
@@ -272,75 +440,157 @@ gap:20px;
 
 
 
-.admin-card{
+
+
+.stat-box{
+
+
+position:relative;
+
+
+overflow:hidden;
+
+
+}
+
+
+
+.stat-line{
+
+
+height:3px;
+
+
+width:100%;
 
 
 background:
 
-rgba(255,255,255,.04);
+linear-gradient(
+90deg,
+transparent,
+var(--neon),
+transparent
+);
 
 
-
-border:
-
-1px solid rgba(57,255,138,.15);
-
-
-
-border-radius:22px;
-
-
-
-padding:25px;
-
-
-
-backdrop-filter:
-
-blur(20px);
-
-
-
-transition:.25s;
+margin-bottom:20px;
 
 
 }
 
 
 
-.admin-card:hover{
+.stat-box p{
 
 
-transform:
-
-translateY(-5px);
+color:var(--muted);
 
 
-box-shadow:
+font-size:13px;
 
-0 0 40px rgba(57,255,138,.15);
+
+letter-spacing:.15em;
 
 
 }
+
+
+
+.stat-box strong{
+
+
+font-family:Rajdhani;
+
+
+font-size:60px;
+
+
+color:var(--neon);
+
+
+}
+
+
+
+
+.activity{
+
+
+margin-top:25px;
+
+
+}
+
+
+
+.activity h2{
+
+
+font-family:Rajdhani;
+
+
+}
+
+
+
+.status-row{
+
+
+display:flex;
+
+
+justify-content:space-between;
+
+
+padding:15px 0;
+
+
+border-bottom:
+
+1px solid var(--line-dim);
+
+
+color:var(--muted);
+
+
+}
+
+
+
+.status-row span{
+
+
+color:var(--neon);
+
+
+font-weight:700;
+
+
+}
+
+
 
 
 
 @media(max-width:600px){
 
 
-.stats-grid{
+.stat-box strong{
 
 
-grid-template-columns:1fr;
+font-size:48px;
+
+
+}
 
 
 }
 
-
-}
 
 
 `}</style>
+
 
 
 
@@ -348,6 +598,7 @@ grid-template-columns:1fr;
 
 
 </div>
+
 
 )
 
