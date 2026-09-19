@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+
 import {
   getGifts,
   createGift,
@@ -9,175 +10,216 @@ import {
 } from "./supabaseAdmin";
 
 
-export default function Gifts() {
 
-  const [gifts,setGifts] = useState<Gift[]>([]);
-  const [loading,setLoading] = useState(true);
+export default function Gifts(){
 
 
-  const [showForm,setShowForm] = useState(false);
+const [gifts,setGifts]=useState<Gift[]>([]);
+const [loading,setLoading]=useState(true);
 
 
-  const [form,setForm] = useState({
-    name:"",
-    chance:0,
-    quantity:0,
-    active:true
-  });
+const [showForm,setShowForm]=useState(false);
 
 
+const [form,setForm]=useState({
 
-  async function load(){
+name:"",
+chance:0,
+quantity:0,
+active:true
 
-    setLoading(true);
+});
 
-    const data = await getGifts();
 
-    setGifts(data);
 
-    setLoading(false);
-  }
+async function load(){
 
+setLoading(true);
 
+const data=await getGifts();
 
-  useEffect(()=>{
+setGifts(data);
 
-    load();
+setLoading(false);
 
-  },[]);
+}
 
 
 
+useEffect(()=>{
 
+load();
 
-  async function addGift(){
+},[]);
 
 
-    if(!form.name){
-      alert("Введите название");
-      return;
-    }
 
 
-    await createGift(form);
 
+async function addGift(){
 
-    setForm({
-      name:"",
-      chance:0,
-      quantity:0,
-      active:true
-    });
 
+if(!form.name.trim()){
 
-    setShowForm(false);
+alert("Введите название");
 
-    load();
+return;
 
-  }
+}
 
 
 
+await createGift(form);
 
 
-  async function removeGift(id:number){
+setForm({
 
-    const ok = confirm(
-      "Удалить подарок?"
-    );
+name:"",
+chance:0,
+quantity:0,
+active:true
 
+});
 
-    if(!ok)return;
 
+setShowForm(false);
 
-    await deleteGift(id);
+load();
 
-    load();
+}
 
-  }
 
 
 
 
+async function editField(
+gift:Gift,
+field:"name"|"chance"|"quantity"
+){
 
-  async function changeActive(
-    gift:Gift
-  ){
 
-    await toggleGift(
-      gift.id,
-      !gift.active
-    );
+const value=prompt(
+"Новое значение",
+String(gift[field])
+);
 
 
-    load();
 
-  }
+if(value===null)return;
 
 
 
+if(field==="name"){
 
+await updateGift(
+gift.id,
+{
+name:value
+}
+);
 
-  async function editChance(
-    gift:Gift
-  ){
+}
 
-    const value = prompt(
-      "Новый шанс (%)",
-      String(gift.chance)
-    );
 
+else{
 
-    if(!value)return;
 
+await updateGift(
+gift.id,
+{
+[field]:Number(value)
+}
+);
 
-    await updateGift(
-      gift.id,
-      {
-        chance:Number(value)
-      }
-    );
 
+}
 
-    load();
 
-  }
+
+load();
+
+
+}
+
+
+
+
+
+
+
+async function removeGift(
+id:number
+){
+
+
+if(!confirm("Удалить подарок?"))
+return;
+
+
+await deleteGift(id);
+
+load();
+
+}
+
+
+
+
+
+
+async function changeStatus(
+gift:Gift
+){
+
+
+await toggleGift(
+gift.id,
+!gift.active
+);
+
+
+load();
+
+
+}
+
+
 
 
 
 
 return (
 
-<div style={{
-padding:"32px 40px",
-maxWidth:1100
-}}>
+<div className="admin-page">
 
 
-<div style={{
+<div
+style={{
 display:"flex",
 justifyContent:"space-between",
 alignItems:"center",
-marginBottom:28
-}}>
+marginBottom:25
+}}
+>
 
 
 <div>
 
 <h1
 style={{
-fontFamily:"'Rajdhani',sans-serif",
-fontSize:28,
-color:"var(--ink)"
+fontFamily:"Rajdhani",
+fontSize:30
 }}
 >
 🎁 Подарки
 </h1>
 
 
-<p style={{
+<p
+style={{
 color:"var(--muted)"
-}}>
+}}
+>
 Управление призами и шансами
 </p>
 
@@ -187,13 +229,11 @@ color:"var(--muted)"
 
 
 <button
+style={button}
 onClick={()=>setShowForm(!showForm)}
-style={buttonStyle}
 >
-+
-Добавить
++ Добавить
 </button>
-
 
 
 </div>
@@ -202,14 +242,16 @@ style={buttonStyle}
 
 
 
-{
-showForm && (
 
-<div style={cardStyle}>
+{
+showForm &&
+
+<div style={card}>
 
 
 <input
-placeholder="Название подарка"
+style={input}
+placeholder="Название"
 value={form.name}
 onChange={
 e=>setForm({
@@ -220,8 +262,11 @@ name:e.target.value
 />
 
 
+
 <input
+style={input}
 type="number"
+min="0"
 placeholder="Шанс"
 value={form.chance}
 onChange={
@@ -233,8 +278,12 @@ chance:Number(e.target.value)
 />
 
 
+
+
 <input
+style={input}
 type="number"
+min="0"
 placeholder="Количество"
 value={form.quantity}
 onChange={
@@ -247,9 +296,10 @@ quantity:Number(e.target.value)
 
 
 
+
 <button
+style={button}
 onClick={addGift}
-style={buttonStyle}
 >
 Сохранить
 </button>
@@ -258,9 +308,9 @@ style={buttonStyle}
 
 </div>
 
-)
-
 }
+
+
 
 
 
@@ -268,12 +318,18 @@ style={buttonStyle}
 {
 loading ?
 
-<div>Загрузка...</div>
+<p>Загрузка...</p>
 
 
 :
 
-<div style={cardStyle}>
+
+<div
+style={{
+...card,
+overflowX:"auto"
+}}
+>
 
 
 <table
@@ -288,12 +344,12 @@ borderCollapse:"collapse"
 
 <tr>
 
-<th style={th}>ID</th>
-<th style={th}>Название</th>
-<th style={th}>Шанс</th>
-<th style={th}>Количество</th>
-<th style={th}>Статус</th>
-<th style={th}>Действия</th>
+<th>ID</th>
+<th>Название</th>
+<th>Шанс</th>
+<th>Количество</th>
+<th>Статус</th>
+<th>Действия</th>
 
 </tr>
 
@@ -312,56 +368,55 @@ gifts.map(gift=>(
 <tr key={gift.id}>
 
 
-<td style={td}>
-{gift.id}
-</td>
+<td>{gift.id}</td>
 
 
-<td style={td}>
+
+<td
+onClick={()=>editField(gift,"name")}
+style={cellClickable}
+>
 {gift.name}
 </td>
 
 
 
+
 <td
-style={{
-...td,
-cursor:"pointer"
-}}
-onClick={()=>editChance(gift)}
+onClick={()=>editField(gift,"chance")}
+style={cellClickable}
 >
-
-<span style={{
-color:"var(--neon)"
-}}>
 {gift.chance}%
-</span>
-
 </td>
 
 
 
-<td style={td}>
+
+<td
+onClick={()=>editField(gift,"quantity")}
+style={cellClickable}
+>
 {gift.quantity}
 </td>
 
 
 
 
-<td style={td}>
-
+<td>
 
 <button
-onClick={()=>changeActive(gift)}
 style={{
-...statusStyle,
+background:"transparent",
+border:0,
+cursor:"pointer",
 color:
 gift.active
 ?
 "var(--neon)"
 :
-"#ff6b6b"
+"#ff6666"
 }}
+onClick={()=>changeStatus(gift)}
 >
 
 {
@@ -374,22 +429,24 @@ gift.active
 
 </button>
 
-
 </td>
 
 
 
 
-<td style={td}>
+<td>
 
 
 <button
+
+style={deleteBtn}
+
 onClick={()=>removeGift(gift.id)}
-style={{
-...dangerButton
-}}
+
 >
+
 Удалить
+
 </button>
 
 
@@ -401,9 +458,7 @@ style={{
 
 
 ))
-
 }
-
 
 
 </tbody>
@@ -418,93 +473,73 @@ style={{
 }
 
 
+
 </div>
 
 );
+
 
 }
 
 
 
 
-
-
-
-const th:React.CSSProperties={
-padding:"14px",
-textAlign:"left",
-color:"var(--muted)"
-};
-
-
-
-const td:React.CSSProperties={
-padding:"14px",
-borderBottom:"1px solid var(--line-dim)"
-};
-
-
-
-const cardStyle:React.CSSProperties={
+const card:React.CSSProperties={
 
 background:"var(--panel)",
-
 border:"1px solid var(--line-dim)",
-
 borderRadius:16,
-
 padding:20,
-
 marginBottom:20
 
 };
 
 
 
-const buttonStyle:React.CSSProperties={
+const input:React.CSSProperties={
 
-background:"var(--neon)",
-
-border:"none",
-
-padding:"10px 18px",
-
+display:"block",
+width:"100%",
+padding:12,
+marginBottom:12,
 borderRadius:10,
-
-cursor:"pointer",
-
-fontWeight:600
+border:"1px solid var(--line-dim)",
+background:"transparent",
+color:"var(--ink)"
 
 };
 
 
 
-const dangerButton:React.CSSProperties={
+const button:React.CSSProperties={
+
+background:"var(--neon)",
+border:0,
+padding:"10px 18px",
+borderRadius:10,
+cursor:"pointer",
+fontWeight:700
+
+};
+
+
+
+const deleteBtn:React.CSSProperties={
 
 background:"rgba(255,80,80,.15)",
-
 border:"1px solid rgba(255,80,80,.3)",
-
 color:"#ff6b6b",
-
-padding:"6px 12px",
-
+padding:"7px 12px",
 borderRadius:8,
-
 cursor:"pointer"
 
 };
 
 
 
-const statusStyle:React.CSSProperties={
+const cellClickable:React.CSSProperties={
 
-background:"transparent",
-
-border:"none",
-
-cursor:"pointer",
-
-fontWeight:600
+padding:14,
+cursor:"pointer"
 
 };

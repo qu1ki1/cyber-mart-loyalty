@@ -21,57 +21,72 @@ export type Gift = {
 };
 
 
+export type GiftUpdate = {
+  name?: string;
+  chance?: number;
+  quantity?: number;
+  active?: boolean;
+};
+
+
 
 /*
- USERS
+=================
+USERS
+=================
 */
+
 
 export async function getUsers(): Promise<User[]> {
 
   const { data, error } = await supabase
     .from("users")
     .select("*")
-    .order("id", { ascending: false });
+    .order("id", { ascending:false });
 
 
-  if (error) {
+  if(error){
     console.error(error);
     return [];
   }
 
 
   return (data as User[]) || [];
+
 }
 
 
 
 /*
- GIFTS
+=================
+GIFTS
+=================
 */
 
 
 export async function getGifts(): Promise<Gift[]> {
 
-  const { data, error } = await supabase
+  const {data,error}=await supabase
     .from("gifts")
     .select("*")
-    .order("id", { ascending: true });
+    .order("id",{ascending:true});
 
 
-  if (error) {
+  if(error){
     console.error(error);
     return [];
   }
 
 
   return (data as Gift[]) || [];
+
 }
 
 
 
 
 export async function createGift(
-  gift: {
+  gift:{
     name:string;
     chance:number;
     quantity:number;
@@ -79,11 +94,28 @@ export async function createGift(
   }
 ){
 
+
+  if(gift.chance < 0){
+    throw new Error(
+      "Шанс не может быть меньше 0"
+    );
+  }
+
+
+  if(gift.quantity < 0){
+    throw new Error(
+      "Количество не может быть меньше 0"
+    );
+  }
+
+
+
   const {data,error}=await supabase
     .from("gifts")
     .insert(gift)
     .select()
     .single();
+
 
 
   if(error){
@@ -93,15 +125,18 @@ export async function createGift(
 
 
   return data as Gift;
+
 }
+
 
 
 
 
 export async function updateGift(
   id:number,
-  updates:Partial<Gift>
+  updates:GiftUpdate
 ){
+
 
   const {data,error}=await supabase
     .from("gifts")
@@ -111,6 +146,7 @@ export async function updateGift(
     .single();
 
 
+
   if(error){
     console.error(error);
     throw error;
@@ -118,17 +154,23 @@ export async function updateGift(
 
 
   return data as Gift;
+
 }
 
 
 
 
-export async function deleteGift(id:number){
+
+export async function deleteGift(
+  id:number
+){
+
 
   const {error}=await supabase
     .from("gifts")
     .delete()
     .eq("id",id);
+
 
 
   if(error){
@@ -138,7 +180,9 @@ export async function deleteGift(id:number){
 
 
   return true;
+
 }
+
 
 
 
@@ -148,21 +192,12 @@ export async function toggleGift(
   active:boolean
 ){
 
-  const {data,error}=await supabase
-    .from("gifts")
-    .update({
+
+  return updateGift(
+    id,
+    {
       active
-    })
-    .eq("id",id)
-    .select()
-    .single();
+    }
+  );
 
-
-  if(error){
-    console.error(error);
-    throw error;
-  }
-
-
-  return data as Gift;
 }
