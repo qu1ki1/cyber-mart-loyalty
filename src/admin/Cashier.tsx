@@ -1,8 +1,12 @@
 import { useState } from 'react'
-import { ADMIN_PASSWORD_KEY } from './AdminGate'
+import { ADMIN_PASSWORD_KEY, ADMIN_SLUG_KEY } from './AdminGate'
 
 function getAdminPassword(): string {
   return sessionStorage.getItem(ADMIN_PASSWORD_KEY) || ''
+}
+
+function getBusinessSlug(): string {
+  return sessionStorage.getItem(ADMIN_SLUG_KEY) || ''
 }
 
 export default function Cashier() {
@@ -79,7 +83,7 @@ function RedeemCard() {
       const res = await fetch('/api/redeem', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: code.trim(), password: getAdminPassword() }),
+        body: JSON.stringify({ code: code.trim(), slug: getBusinessSlug(), password: getAdminPassword() }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Не удалось погасить код')
@@ -137,7 +141,7 @@ function GrantAttemptCard() {
       const res = await fetch('/api/grant-attempt', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: username.trim(), count, password: getAdminPassword() }),
+        body: JSON.stringify({ username: username.trim(), count, slug: getBusinessSlug(), password: getAdminPassword() }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Не удалось выдать попытку')

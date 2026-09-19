@@ -6,6 +6,7 @@ import Gifts from './admin/Gifts'
 import Winners from './admin/Winners'
 import Settings from './admin/Settings'
 import Cashier from './admin/Cashier'
+import BusinessSettings from './admin/BusinessSettings'
 
 import { motion } from 'framer-motion'
 
@@ -19,6 +20,7 @@ export default function Admin() {
   if (path === '/admin/winners') page = <Winners />
   if (path === '/admin/settings') page = <Settings />
   if (path === '/admin/cashier') page = <Cashier />
+  if (path === '/admin/business') page = <BusinessSettings />
 
   return (
     <div className="admin-app">

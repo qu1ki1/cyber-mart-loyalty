@@ -10,6 +10,14 @@ import './App.css'
 
 type Screen = 'open' | 'roll' | 'result'
 
+type Business = {
+  slug: string
+  name: string
+  logo_url?: string | null
+  primary_color?: string | null
+  description?: string | null
+}
+
 type SpinResult = {
   already_spun: boolean
   gift_name?: string
@@ -21,16 +29,30 @@ type SpinResult = {
   error?: string
 }
 
-async function fetchStatus(telegramId: number): Promise<SpinResult> {
-  const res = await fetch(`/api/spin?telegram_id=${telegramId}`)
+function getBusinessSlug(): string | null {
+  const fromQuery = new URLSearchParams(window.location.search).get('biz')
+  if (fromQuery) return fromQuery
+  // запасной вариант, если мини-апп открыли напрямую по startapp-ссылке
+  const startParam = window.Telegram?.WebApp?.initDataUnsafe?.start_param
+  return startParam || null
+}
+
+async function fetchBusiness(slug: string): Promise<Business | null> {
+  const res = await fetch(`/api/business-settings?slug=${encodeURIComponent(slug)}`)
+  if (!res.ok) return null
   return res.json()
 }
 
-async function requestSpin(telegramId: number, firstName?: string, username?: string): Promise<SpinResult> {
+async function fetchStatus(telegramId: number, slug: string): Promise<SpinResult> {
+  const res = await fetch(`/api/spin?telegram_id=${telegramId}&slug=${encodeURIComponent(slug)}`)
+  return res.json()
+}
+
+async function requestSpin(telegramId: number, slug: string, firstName?: string, username?: string): Promise<SpinResult> {
   const res = await fetch('/api/spin', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ telegram_id: telegramId, first_name: firstName, username }),
+    body: JSON.stringify({ telegram_id: telegramId, slug, first_name: firstName, username }),
   })
   const data = await res.json()
   if (!res.ok) throw new Error(data.error || 'Не удалось открыть кейс')
@@ -40,44 +62,55 @@ async function requestSpin(telegramId: number, firstName?: string, username?: st
 export default function App() {
   const [screen, setScreen] = useState<Screen>('open')
   const [result, setResult] = useState<SpinResult | null>(null)
+  const [business, setBusiness] = useState<Business | null>(null)
+  const [businessError, setBusinessError] = useState<string | null>(null)
   const [telegramUser, setTelegramUser] = useState<{ id: number; first_name?: string; username?: string } | null>(null)
   const [error, setError] = useState<string | null>(null)
   const busy = useRef(false)
 
   useEffect(() => {
     const tg = window.Telegram?.WebApp
-    if (!tg) return
-
-    tg.ready()
-    tg.expand()
-
-    const user = tg.initDataUnsafe?.user
-    if (user) {
-      setTelegramUser({ id: user.id, first_name: user.first_name, username: user.username })
+    if (tg) {
+      tg.ready()
+      tg.expand()
+      const user = tg.initDataUnsafe?.user
+      if (user) setTelegramUser({ id: user.id, first_name: user.first_name, username: user.username })
     }
+
+    const slug = getBusinessSlug()
+    if (!slug) {
+      setBusinessError('Открой это приложение по QR-коду в заведении — так мы поймём, какой бизнес тебе показать.')
+      return
+    }
+    fetchBusiness(slug).then((b) => {
+      if (!b) {
+        setBusinessError('Бизнес не найден — возможно, ссылка устарела.')
+      } else {
+        setBusiness(b)
+        if (b.primary_color) document.documentElement.style.setProperty('--neon', b.primary_color)
+      }
+    })
   }, [])
 
   useEffect(() => {
-    if (!telegramUser) return
-    fetchStatus(telegramUser.id)
+    if (!telegramUser || !business) return
+    fetchStatus(telegramUser.id, business.slug)
       .then((status) => {
         if (status.already_spun) setResult(status)
       })
-      .catch(() => {
-        // Оффлайн или функция ещё не задеплоена — даём попробовать спин напрямую.
-      })
-  }, [telegramUser])
+      .catch(() => {})
+  }, [telegramUser, business])
 
   const alreadySpun = !!result?.already_spun
 
   async function openCase() {
-    if (busy.current || alreadySpun || !telegramUser) return
+    if (busy.current || alreadySpun || !telegramUser || !business) return
     busy.current = true
     setError(null)
     setScreen('roll')
 
     try {
-      const spin = await requestSpin(telegramUser.id, telegramUser.first_name, telegramUser.username)
+      const spin = await requestSpin(telegramUser.id, business.slug, telegramUser.first_name, telegramUser.username)
       setResult(spin)
     } catch (err) {
       setScreen('open')
@@ -85,6 +118,28 @@ export default function App() {
     } finally {
       busy.current = false
     }
+  }
+
+  if (businessError) {
+    return (
+      <div className="app">
+        <div className="bg-grid" />
+        <div className="bg-glow" />
+        <div className="cyber-card">
+          <h1>Хм…</h1>
+          <div className="status-pill error">{businessError}</div>
+        </div>
+      </div>
+    )
+  }
+
+  if (!business) {
+    return (
+      <div className="app">
+        <div className="bg-grid" />
+        <div className="bg-glow" />
+      </div>
+    )
   }
 
   return (
@@ -99,7 +154,7 @@ export default function App() {
           </div>
           {telegramUser?.first_name && <div className="greeting">Привет, {telegramUser.first_name}</div>}
         </div>
-        <div className="biz-pill">CYBER MART</div>
+        <div className="biz-pill">{business.name}</div>
       </header>
 
       <main>
@@ -153,7 +208,7 @@ export default function App() {
         </AnimatePresence>
       </main>
 
-      <footer>CYBER MART LOYALTY</footer>
+      <footer>{business.name.toUpperCase()} · LOYALTY</footer>
     </div>
   )
 }

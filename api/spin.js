@@ -1,15 +1,10 @@
 // api/spin.js
 //
-// Призы теперь БЕЗ ограничения по количеству — крутится только по весам (chance).
-// Код бонуса действует 14 дней (не 24 часа) — чтобы гость успел вернуться.
-// Учитывает бонусные попытки, выданные администратором вручную (users.bonus_attempts).
+// Теперь работает для ЛЮБОГО бизнеса — какой именно, определяется
+// параметром slug (приходит из start_param мини-аппа, см. src/App.tsx).
 //
-// Нужные переменные окружения в Vercel:
-//   SUPABASE_URL
-//   SUPABASE_SERVICE_ROLE_KEY
-//
-// GET  /api/spin?telegram_id=123        -> проверка статуса, без побочных эффектов
-// POST /api/spin  {telegram_id, first_name, username}  -> сам спин
+// GET  /api/spin?telegram_id=123&slug=cyber-mart
+// POST /api/spin  {telegram_id, first_name, username, slug}
 
 import { createClient } from '@supabase/supabase-js'
 
@@ -19,8 +14,7 @@ const CODE_LIFETIME_DAYS = 14
 
 function startOfTodayISO() {
   const now = new Date()
-  const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()))
-  return start.toISOString()
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())).toISOString()
 }
 
 function expiresAtISO() {
@@ -34,19 +28,26 @@ function generateCode(prefix = 'CM') {
 }
 
 function pickWeighted(gifts) {
-  const total = gifts.reduce((sum, g) => sum + g.chance, 0)
+  const total = gifts.reduce((sum, g) => sum + (g.chance || g.weight || 1), 0)
   let roll = Math.random() * total
   for (const gift of gifts) {
-    roll -= gift.chance
+    roll -= gift.chance || gift.weight || 1
     if (roll <= 0) return gift
   }
   return gifts[0]
 }
 
-async function findTodayWin(telegramId) {
+async function getBusiness(slug) {
+  const { data, error } = await supabase.from('businesses').select('id, name').ilike('slug', slug).maybeSingle()
+  if (error) throw error
+  return data
+}
+
+async function findTodayWin(businessId, telegramId) {
   const { data, error } = await supabase
     .from('winners')
     .select('*, gifts(name, rarity, icon)')
+    .eq('business_id', businessId)
     .eq('telegram_id', telegramId)
     .gte('created_at', startOfTodayISO())
     .order('created_at', { ascending: false })
@@ -59,28 +60,34 @@ async function findTodayWin(telegramId) {
 
 export default async function handler(req, res) {
   const telegramId = Number(req.method === 'GET' ? req.query.telegram_id : req.body?.telegram_id)
+  const slug = req.method === 'GET' ? req.query.slug : req.body?.slug
 
-  if (!telegramId) {
-    return res.status(400).json({ error: 'telegram_id обязателен' })
-  }
+  if (!telegramId) return res.status(400).json({ error: 'telegram_id обязателен' })
+  if (!slug) return res.status(400).json({ error: 'Не указан бизнес (slug)' })
 
   try {
-    // Всегда обновляем username/имя — это единственный способ потом найти
-    // гостя в админке по username, а не по telegram_id.
+    const business = await getBusiness(slug)
+    if (!business) return res.status(404).json({ error: 'Бизнес не найден — проверь ссылку/QR' })
+
     if (req.method === 'POST') {
       const { first_name, username } = req.body || {}
       await supabase
         .from('users')
         .upsert(
-          { telegram_id: telegramId, first_name: first_name || '', username: username || null },
-          { onConflict: 'telegram_id' }
+          { telegram_id: telegramId, business_id: business.id, first_name: first_name || '', username: username || null },
+          { onConflict: 'telegram_id,business_id' }
         )
     }
 
-    const { data: userRow } = await supabase.from('users').select('bonus_attempts').eq('telegram_id', telegramId).maybeSingle()
+    const { data: userRow } = await supabase
+      .from('users')
+      .select('bonus_attempts')
+      .eq('telegram_id', telegramId)
+      .eq('business_id', business.id)
+      .maybeSingle()
     const bonusAttempts = userRow?.bonus_attempts || 0
 
-    const existing = await findTodayWin(telegramId)
+    const existing = await findTodayWin(business.id, telegramId)
 
     if (existing && bonusAttempts <= 0) {
       return res.status(200).json({
@@ -98,18 +105,19 @@ export default async function handler(req, res) {
       return res.status(200).json({ already_spun: !!existing, bonus_attempts: bonusAttempts })
     }
 
-    const { data: gifts, error: giftsError } = await supabase.from('gifts').select('*').eq('active', true)
+    const { data: gifts, error: giftsError } = await supabase.from('gifts').select('*').eq('business_id', business.id).eq('active', true)
 
     if (giftsError) throw giftsError
     if (!gifts || gifts.length === 0) {
-      return res.status(500).json({ error: 'Для бизнеса не настроены активные призы' })
+      return res.status(500).json({ error: 'Для этого бизнеса не настроены активные призы' })
     }
 
     const winner = pickWeighted(gifts)
-    const code = generateCode()
+    const code = generateCode(winner.prefix || 'CM')
     const expiresAt = expiresAtISO()
 
     const { error: insertError } = await supabase.from('winners').insert({
+      business_id: business.id,
       telegram_id: telegramId,
       gift_id: winner.id,
       gift_name: winner.name,
@@ -117,15 +125,14 @@ export default async function handler(req, res) {
       redeemed: false,
       expires_at: expiresAt,
     })
-
     if (insertError) throw insertError
 
-    // Если это был бонусный спин — списываем одну бонусную попытку.
     if (existing && bonusAttempts > 0) {
       await supabase
         .from('users')
         .update({ bonus_attempts: bonusAttempts - 1 })
         .eq('telegram_id', telegramId)
+        .eq('business_id', business.id)
     }
 
     return res.status(200).json({

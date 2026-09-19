@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, Gift, Trophy, Settings, Wallet } from 'lucide-react'
+import { LayoutDashboard, Users, Gift, Trophy, Settings, Wallet, Palette } from 'lucide-react'
 
 export default function AdminMenu() {
   const path = window.location.pathname
@@ -6,6 +6,7 @@ export default function AdminMenu() {
   const items = [
     { url: '/admin', name: 'HOME', icon: <LayoutDashboard /> },
     { url: '/admin/cashier', name: 'КАССА', icon: <Wallet /> },
+    { url: '/admin/business', name: 'БРЕНД', icon: <Palette /> },
     { url: '/admin/users', name: 'USERS', icon: <Users /> },
     { url: '/admin/gifts', name: 'GIFTS', icon: <Gift /> },
     { url: '/admin/winners', name: 'WINS', icon: <Trophy /> },

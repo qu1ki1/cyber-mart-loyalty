@@ -1,10 +1,9 @@
 // api/redeem.js
 //
-// Погашение кода администратором клуба.
-// Требует ADMIN_PASSWORD или DEV_PASSWORD (любой из двух подходит для гашения —
-// разница между уровнями только в доступе к настройке призов и полному журналу).
+// Погашение кода. Теперь авторизация — пароль ВЛАДЕЛЬЦА конкретного бизнеса
+// (businesses.owner_password), а не общий ADMIN_PASSWORD на всю платформу.
 //
-// POST /api/redeem  { code, password }
+// POST /api/redeem  { code, slug, password }
 
 import { createClient } from '@supabase/supabase-js'
 
@@ -15,38 +14,41 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Метод не поддерживается' })
   }
 
-  const { code, password } = req.body || {}
-  const validPasswords = [process.env.ADMIN_PASSWORD, process.env.DEV_PASSWORD].filter(Boolean)
-
-  if (!password || !validPasswords.includes(password)) {
-    return res.status(401).json({ error: 'Неверный пароль администратора' })
-  }
-
-  if (!code || typeof code !== 'string') {
-    return res.status(400).json({ error: 'Не указан код' })
-  }
+  const { code, slug, password } = req.body || {}
+  if (!slug || !password) return res.status(400).json({ error: 'Укажи бизнес и пароль' })
+  if (!code) return res.status(400).json({ error: 'Не указан код' })
 
   try {
-    const { data: win, error } = await supabase.from('winners').select('*').eq('code', code.trim().toUpperCase()).maybeSingle()
+    const { data: business } = await supabase.from('businesses').select('id, owner_password').ilike('slug', slug).maybeSingle()
+    if (!business || business.owner_password !== password) {
+      return res.status(401).json({ error: 'Неверный пароль администратора' })
+    }
+
+    const { data: win, error } = await supabase
+      .from('winners')
+      .select('*')
+      .eq('business_id', business.id)
+      .eq('code', code.trim().toUpperCase())
+      .maybeSingle()
 
     if (error) throw error
-    if (!win) {
-      return res.status(404).json({ error: 'Код не найден' })
-    }
-    if (win.redeemed) {
-      return res.status(409).json({ error: 'Этот код уже был погашен ранее' })
-    }
+    if (!win) return res.status(404).json({ error: 'Код не найден' })
+    if (win.redeemed) return res.status(409).json({ error: 'Этот код уже был погашен ранее' })
     if (win.expires_at && new Date(win.expires_at) < new Date()) {
       return res.status(410).json({ error: 'Срок действия кода истёк' })
     }
 
-    const { data: guest } = await supabase.from('users').select('username, first_name').eq('telegram_id', win.telegram_id).maybeSingle()
+    const { data: guest } = await supabase
+      .from('users')
+      .select('username, first_name')
+      .eq('telegram_id', win.telegram_id)
+      .eq('business_id', business.id)
+      .maybeSingle()
 
     const { error: updateError } = await supabase
       .from('winners')
       .update({ redeemed: true, redeemed_at: new Date().toISOString() })
       .eq('id', win.id)
-
     if (updateError) throw updateError
 
     return res.status(200).json({
