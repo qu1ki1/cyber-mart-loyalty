@@ -83,6 +83,6 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Метод не поддерживается' })
   } catch (err) {
     console.error(err)
-    return res.status(500).json({ error: err.message || 'Внутренняя ошибка' })
+    return res.status(500).json({ error: 'Не удалось выполнить действие с призами. Попробуй ещё раз.' })
   }
 }

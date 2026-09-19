@@ -42,6 +42,6 @@ export default async function handler(req, res) {
     return res.status(200).json({ business, role, my_businesses: myBusinesses })
   } catch (err) {
     console.error(err)
-    return res.status(500).json({ error: err.message || 'Внутренняя ошибка' })
+    return res.status(500).json({ error: 'Не удалось загрузить приложение. Попробуй ещё раз.' })
   }
 }

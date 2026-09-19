@@ -18,7 +18,7 @@ export default async function handler(req, res) {
     else return res.status(400).json({ error: 'Не указан бизнес' })
 
     const { data, error } = await query.maybeSingle()
-    if (error) return res.status(500).json({ error: error.message })
+    if (error) return res.status(500).json({ error: 'Не удалось загрузить настройки бренда.' })
     if (!data) return res.status(404).json({ error: 'Бизнес не найден' })
     return res.status(200).json(data)
   }
@@ -44,6 +44,6 @@ export default async function handler(req, res) {
   if (custom_domain !== undefined) updates.custom_domain = custom_domain || null
 
   const { data, error } = await supabase.from('businesses').update(updates).eq('id', business.id).select(PUBLIC_FIELDS).single()
-  if (error) return res.status(500).json({ error: error.message })
+  if (error) return res.status(500).json({ error: 'Не удалось загрузить настройки бренда.' })
   return res.status(200).json(data)
 }

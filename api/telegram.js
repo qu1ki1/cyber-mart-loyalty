@@ -4,7 +4,7 @@
 // (игра, касса, призы, бренд, статистика) — внутри самого приложения,
 // определяется автоматически по тому, кто ты в Telegram.
 //
-// /start <slug>                — гость сканирует QR в заведении
+// /start <slug>                — гость переходит по ссылке своего заведения
 // /start <slug>-ref-<id>       — гость пришёл по реферальной ссылке
 // /start join-<код>            — сотрудник/управляющий переходит по
 //                                 приглашению от владельца (выдано внутри
@@ -46,7 +46,7 @@ export default async function handler(req, res) {
     const payload = parts.length > 1 ? parts[1].trim() : ''
 
     if (!payload) {
-      await send(chatId, '👋 Привет! Это LOYALTY.\n\nЕсли ты гость — отсканируй QR в заведении.\nЕсли хочешь запустить свою программу лояльности — просто открой приложение и заполни форму.', openAppButton(APP_URL))
+      await send(chatId, '👋 Добро пожаловать в LOYALTY!', openAppButton(APP_URL))
       return res.status(200).json({ ok: true })
     }
 
@@ -77,7 +77,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true })
     }
 
-    // ---------- обычный клиентский вход (QR / реферал) ----------
+    // ---------- обычный клиентский вход (по ссылке / реферал) ----------
     const refMatch = payload.match(/^(.+)-ref-(\d+)$/)
     const slug = refMatch ? refMatch[1] : payload
     const ref = refMatch ? refMatch[2] : ''

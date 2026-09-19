@@ -43,6 +43,6 @@ export default async function handler(req, res) {
     return res.status(200).json({ id: business.id, slug: business.slug, name: business.name })
   } catch (err) {
     console.error(err)
-    return res.status(500).json({ error: err.message || 'Внутренняя ошибка' })
+    return res.status(500).json({ error: 'Не удалось создать бизнес. Попробуй ещё раз чуть позже.' })
   }
 }

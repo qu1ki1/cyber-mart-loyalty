@@ -83,3 +83,7 @@ create table if not exists invites (
   used_by bigint,
   used_at timestamptz
 );
+
+-- Принудительно обновить кэш схемы у Supabase (иначе новые таблицы
+-- иногда не сразу видны через API — ошибка "Could not find the table").
+NOTIFY pgrst, 'reload schema';

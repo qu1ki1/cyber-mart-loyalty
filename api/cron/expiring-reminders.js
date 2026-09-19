@@ -64,7 +64,7 @@ export default async function handler(req, res) {
     return res.status(200).json({ sent, win_back_sent: winBackSent })
   } catch (err) {
     console.error(err)
-    return res.status(500).json({ error: err.message || 'Internal error' })
+    return res.status(500).json({ error: 'Не удалось выполнить рассылку.' })
   }
 }
 

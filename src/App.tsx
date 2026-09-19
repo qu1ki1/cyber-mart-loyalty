@@ -13,7 +13,7 @@ import './App.css'
 
 type Screen = 'open' | 'roll' | 'result'
 type Role = 'owner' | 'manager' | 'staff'
-type Mode = 'game' | 'panel'
+type Mode = 'game' | 'panel' | 'register'
 
 type Business = {
   id: number
@@ -118,7 +118,7 @@ export default function App() {
       const resolved = ctx.business || ctx.my_businesses[0] || null
       if (resolved) applyTheme(resolved.design_theme, resolved.primary_color)
 
-      // Если QR/ссылка привела к конкретному бизнесу — по умолчанию игра.
+      // Если ссылка привела к конкретному бизнесу — по умолчанию игра.
       // Если открыли бота "просто так" и это владелец/сотрудник — сразу панель.
       if (!ctx.business && ctx.my_businesses.length > 0) setMode('panel')
     })
@@ -218,6 +218,11 @@ export default function App() {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <div className="biz-pill">{activeBusiness.name}</div>
+          <button className="gear-btn" onClick={() => setMode('register')} aria-label="Зарегистрировать бизнес" title="Зарегистрировать новый бизнес">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+            </svg>
+          </button>
           {isAdmin && (
             <button className="gear-btn" onClick={() => setMode(mode === 'game' ? 'panel' : 'game')} aria-label="Переключить режим">
               <svg viewBox="0 0 24 24" fill="none">
@@ -237,7 +242,14 @@ export default function App() {
         </div>
       </header>
 
-      {mode === 'panel' && isAdmin ? (
+      {mode === 'register' ? (
+        <RegisterInApp
+          telegramId={telegramUser.id}
+          onCreated={(slug) => {
+            handleBusinessCreated(slug)
+          }}
+        />
+      ) : mode === 'panel' && isAdmin ? (
         <AdminPanel telegramId={telegramUser.id} slug={activeBusiness.slug} role={activeRole!} botUsername={BOT_USERNAME} />
       ) : (
         <main>

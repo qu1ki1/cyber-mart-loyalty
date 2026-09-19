@@ -51,6 +51,6 @@ export default async function handler(req, res) {
     })
   } catch (err) {
     console.error(err)
-    return res.status(500).json({ error: err.message || 'Внутренняя ошибка' })
+    return res.status(500).json({ error: 'Не удалось выдать попытку. Попробуй ещё раз.' })
   }
 }

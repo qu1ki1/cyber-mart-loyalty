@@ -32,7 +32,7 @@ export default function RegisterInApp({ telegramId, onCreated }: Props) {
     <div className="cyber-card">
       <h1>Запусти свою программу лояльности</h1>
       <p className="panel-hint" style={{ marginBottom: 20 }}>
-        Придумай название — всё остальное (призы, QR-ссылка) настроится автоматически, доделаешь позже.
+        Придумай название — всё остальное (призы, ссылка для гостей) настроится автоматически, доделаешь позже.
       </p>
       <form onSubmit={handleSubmit} className="panel-form" style={{ maxWidth: 320, width: '100%' }}>
         <input className="panel-input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Название заведения" required autoFocus />
