@@ -14,6 +14,7 @@ type SpinResult = {
   gift_name?: string
   rarity?: Rarity
   code?: string
+  expires_at?: string
   redeemed?: boolean
   error?: string
 }
@@ -61,7 +62,7 @@ export default function App() {
         if (status.already_spun) setResult(status)
       })
       .catch(() => {
-        // Offline or the function isn't deployed yet — let the user still try to spin.
+        // Оффлайн или функция ещё не задеплоена — даём попробовать спин напрямую.
       })
   }, [telegramUser])
 
@@ -75,8 +76,6 @@ export default function App() {
 
     try {
       const spin = await requestSpin(telegramUser.id, telegramUser.first_name, telegramUser.username)
-      // Reel component calls onDone() once the landing animation finishes;
-      // the actual screen transition happens there so the reveal feels earned.
       setResult(spin)
     } catch (err) {
       setScreen('open')
@@ -144,6 +143,7 @@ export default function App() {
               gift={result.gift_name!}
               code={result.code!}
               rarity={result.rarity!}
+              expiresAt={result.expires_at}
               redeemed={result.redeemed}
               onClose={() => setScreen('open')}
             />

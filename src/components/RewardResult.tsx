@@ -10,15 +10,22 @@ const TIER_LABEL: Record<Rarity, string> = {
   legendary: 'Легендарный',
 }
 
+function formatExpiry(iso?: string): string {
+  if (!iso) return '—'
+  const date = new Date(iso)
+  return `до ${date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })}`
+}
+
 type Props = {
   gift: string
   code: string
   rarity: Rarity
+  expiresAt?: string
   redeemed?: boolean
   onClose: () => void
 }
 
-export default function RewardResult({ gift, code, rarity, redeemed, onClose }: Props) {
+export default function RewardResult({ gift, code, rarity, expiresAt, redeemed, onClose }: Props) {
   useEffect(() => {
     window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success')
   }, [])
@@ -42,12 +49,16 @@ export default function RewardResult({ gift, code, rarity, redeemed, onClose }: 
           <span className="value">{code}</span>
         </div>
         <div className="ticket-row">
+          <span className="label">Действует</span>
+          <span className="value">{formatExpiry(expiresAt)}</span>
+        </div>
+        <div className="ticket-row">
           <span className="label">Статус</span>
           <span className="value">{redeemed ? 'Погашено' : 'Активен'}</span>
         </div>
       </div>
 
-      <p style={{ color: 'var(--muted)', fontSize: 13, marginBottom: 20 }}>Покажи этот экран администратору</p>
+      <p style={{ color: 'var(--muted)', fontSize: 13, marginBottom: 20 }}>Покажи этот экран администратору в следующий визит</p>
 
       <button className="cta" onClick={onClose}>
         На главную

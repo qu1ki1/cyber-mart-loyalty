@@ -1,24 +1,21 @@
 // api/spin.js
 //
-// Runs on Vercel with the Supabase SERVICE ROLE key — never exposed to the
-// browser. This is the ONLY place allowed to decide/record a win.
+// Призы теперь БЕЗ ограничения по количеству — крутится только по весам (chance).
+// Код бонуса действует 14 дней (не 24 часа) — чтобы гость успел вернуться.
+// Учитывает бонусные попытки, выданные администратором вручную (users.bonus_attempts).
 //
-// Required env vars in Vercel (Project Settings -> Environment Variables):
-//   SUPABASE_URL               (same value as VITE_SUPABASE_URL)
-//   SUPABASE_SERVICE_ROLE_KEY  (Supabase dashboard -> Settings -> API -> service_role)
+// Нужные переменные окружения в Vercel:
+//   SUPABASE_URL
+//   SUPABASE_SERVICE_ROLE_KEY
 //
-// GET  /api/spin?telegram_id=123        -> checks today's status, no side effects
-// POST /api/spin  {telegram_id, first_name, username}  -> performs a spin
-//
-// Requires these columns to exist (see the SQL snippet in the chat message):
-//   gifts.rarity   text
-//   gifts.icon     text
-//   winners.code       text
-//   winners.redeemed   boolean
+// GET  /api/spin?telegram_id=123        -> проверка статуса, без побочных эффектов
+// POST /api/spin  {telegram_id, first_name, username}  -> сам спин
 
 import { createClient } from '@supabase/supabase-js'
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
+
+const CODE_LIFETIME_DAYS = 14
 
 function startOfTodayISO() {
   const now = new Date()
@@ -26,8 +23,24 @@ function startOfTodayISO() {
   return start.toISOString()
 }
 
+function expiresAtISO() {
+  const d = new Date()
+  d.setDate(d.getDate() + CODE_LIFETIME_DAYS)
+  return d.toISOString()
+}
+
 function generateCode(prefix = 'CM') {
   return `${prefix}-${Math.floor(1000 + Math.random() * 9000)}`
+}
+
+function pickWeighted(gifts) {
+  const total = gifts.reduce((sum, g) => sum + g.chance, 0)
+  let roll = Math.random() * total
+  for (const gift of gifts) {
+    roll -= gift.chance
+    if (roll <= 0) return gift
+  }
+  return gifts[0]
 }
 
 async function findTodayWin(telegramId) {
@@ -44,27 +57,32 @@ async function findTodayWin(telegramId) {
   return data
 }
 
-function pickWeighted(gifts) {
-  const total = gifts.reduce((sum, g) => sum + g.chance, 0)
-  let roll = Math.random() * total
-  for (const gift of gifts) {
-    roll -= gift.chance
-    if (roll <= 0) return gift
-  }
-  return gifts[0]
-}
-
 export default async function handler(req, res) {
   const telegramId = Number(req.method === 'GET' ? req.query.telegram_id : req.body?.telegram_id)
 
   if (!telegramId) {
-    return res.status(400).json({ error: 'telegram_id is required' })
+    return res.status(400).json({ error: 'telegram_id обязателен' })
   }
 
   try {
+    // Всегда обновляем username/имя — это единственный способ потом найти
+    // гостя в админке по username, а не по telegram_id.
+    if (req.method === 'POST') {
+      const { first_name, username } = req.body || {}
+      await supabase
+        .from('users')
+        .upsert(
+          { telegram_id: telegramId, first_name: first_name || '', username: username || null },
+          { onConflict: 'telegram_id' }
+        )
+    }
+
+    const { data: userRow } = await supabase.from('users').select('bonus_attempts').eq('telegram_id', telegramId).maybeSingle()
+    const bonusAttempts = userRow?.bonus_attempts || 0
+
     const existing = await findTodayWin(telegramId)
 
-    if (existing) {
+    if (existing && bonusAttempts <= 0) {
       return res.status(200).json({
         already_spun: true,
         gift_name: existing.gift_name,
@@ -72,20 +90,15 @@ export default async function handler(req, res) {
         icon: existing.gifts?.icon ?? 'gift',
         code: existing.code,
         redeemed: existing.redeemed,
+        expires_at: existing.expires_at,
       })
     }
 
     if (req.method !== 'POST') {
-      return res.status(200).json({ already_spun: false })
+      return res.status(200).json({ already_spun: !!existing, bonus_attempts: bonusAttempts })
     }
 
-    const { first_name, username } = req.body || {}
-
-    await supabase
-      .from('users')
-      .upsert({ telegram_id: telegramId, first_name: first_name || '', username: username || '' }, { onConflict: 'telegram_id' })
-
-    const { data: gifts, error: giftsError } = await supabase.from('gifts').select('*').eq('active', true).gt('quantity', 0)
+    const { data: gifts, error: giftsError } = await supabase.from('gifts').select('*').eq('active', true)
 
     if (giftsError) throw giftsError
     if (!gifts || gifts.length === 0) {
@@ -94,21 +107,7 @@ export default async function handler(req, res) {
 
     const winner = pickWeighted(gifts)
     const code = generateCode()
-
-    // Guarded decrement: only succeeds if quantity is still > 0 at write time,
-    // so two simultaneous spins can't both take the last unit.
-    const { data: decremented, error: decrementError } = await supabase
-      .from('gifts')
-      .update({ quantity: winner.quantity - 1 })
-      .eq('id', winner.id)
-      .gt('quantity', 0)
-      .select()
-      .maybeSingle()
-
-    if (decrementError) throw decrementError
-    if (!decremented) {
-      return res.status(409).json({ error: 'Приз только что закончился, попробуй ещё раз' })
-    }
+    const expiresAt = expiresAtISO()
 
     const { error: insertError } = await supabase.from('winners').insert({
       telegram_id: telegramId,
@@ -116,9 +115,18 @@ export default async function handler(req, res) {
       gift_name: winner.name,
       code,
       redeemed: false,
+      expires_at: expiresAt,
     })
 
     if (insertError) throw insertError
+
+    // Если это был бонусный спин — списываем одну бонусную попытку.
+    if (existing && bonusAttempts > 0) {
+      await supabase
+        .from('users')
+        .update({ bonus_attempts: bonusAttempts - 1 })
+        .eq('telegram_id', telegramId)
+    }
 
     return res.status(200).json({
       already_spun: false,
@@ -126,9 +134,10 @@ export default async function handler(req, res) {
       rarity: winner.rarity || 'rare',
       icon: winner.icon || 'gift',
       code,
+      expires_at: expiresAt,
     })
   } catch (err) {
     console.error(err)
-    return res.status(500).json({ error: err.message || 'Internal error' })
+    return res.status(500).json({ error: err.message || 'Внутренняя ошибка' })
   }
 }
