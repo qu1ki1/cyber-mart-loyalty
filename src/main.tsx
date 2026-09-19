@@ -1,28 +1,37 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import './index.css'
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
 
-import App from './App'
-import Admin from './Admin'
+import "./index.css";
+import "./styles/cyber.css";
 
-import WebApp from '@twa-dev/sdk'
+import App from "./App";
+import Admin from "./Admin";
+
+import WebApp from "@twa-dev/sdk";
 
 
 // Telegram Mini App
+
 if (WebApp && typeof WebApp.ready === "function") {
-  WebApp.ready()
+  WebApp.ready();
 }
 
+
 if (WebApp && typeof WebApp.expand === "function") {
-  WebApp.expand()
+  WebApp.expand();
 }
 
 
 // Роутинг
-const path = window.location.pathname
+
+const path = window.location.pathname;
 
 
-createRoot(document.getElementById('root')!).render(
+
+createRoot(
+  document.getElementById("root")!
+).render(
+
   <StrictMode>
 
     {
@@ -34,4 +43,5 @@ createRoot(document.getElementById('root')!).render(
     }
 
   </StrictMode>
-)
+
+);

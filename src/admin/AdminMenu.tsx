@@ -1,150 +1,348 @@
 export default function AdminMenu(){
 
 
-const path=window.location.pathname;
+const path = window.location.pathname;
 
 
 
-const item=(url:string,text:string)=>(
-<a
-href={url}
-className={
-path===url
-?
-"active"
-:
-""
+const items = [
+
+{
+url:"/admin",
+icon:"📊",
+title:"Главная"
+},
+
+{
+url:"/admin/users",
+icon:"👥",
+title:"Люди"
+},
+
+{
+url:"/admin/gifts",
+icon:"🎁",
+title:"Призы"
+},
+
+{
+url:"/admin/winners",
+icon:"🏆",
+title:"Победы"
+},
+
+{
+url:"/admin/settings",
+icon:"⚙️",
+title:"Настройки"
 }
->
-{text}
-</a>
-)
+
+];
+
+
 
 
 
 return (
 
-<header className="top">
+<header className="admin-top">
 
 
-<div className="title">
+<div className="admin-brand">
 
 CYBER <span>MART</span>
 
+<small>
+ADMIN PANEL
+</small>
+
 </div>
+
 
 
 
 <nav>
 
 
-{item("/admin","📊")}
+{
+items.map(item=>(
 
-{item("/admin/users","👥")}
 
-{item("/admin/gifts","🎁")}
+<a
 
-{item("/admin/winners","🏆")}
+key={item.url}
 
-{item("/admin/settings","⚙️")}
+href={item.url}
+
+className={
+path===item.url
+?
+"active"
+:
+""
+}
+
+>
+
+
+<div className="icon">
+
+{item.icon}
+
+</div>
+
+
+<div className="label">
+
+{item.title}
+
+</div>
+
+
+</a>
+
+
+))
+
+}
+
 
 
 </nav>
 
 
 
+
+
 <style>{`
 
-.top{
+.admin-top{
 
 
-height:90px;
+position:relative;
 
-background:#080808;
+z-index:10;
 
-border-bottom:1px solid #123;
 
 display:flex;
 
+
 align-items:center;
+
 
 justify-content:space-between;
 
-padding:0 20px;
+
+
+padding:14px 20px;
+
+
+
+background:
+
+rgba(255,255,255,.035);
+
+
+
+border-bottom:
+
+1px solid var(--line-dim);
+
+
+
+backdrop-filter:
+
+blur(18px);
+
+
 
 }
 
 
 
-.title{
-
-font-size:20px;
-
-font-weight:800;
-
-letter-spacing:3px;
-
-}
+.admin-brand{
 
 
-.title span{
+font-family:Rajdhani,sans-serif;
 
-color:#39ff88;
-
-}
-
-
-
-nav{
-
-display:flex;
-
-gap:8px;
-
-}
-
-
-
-nav a{
-
-
-width:45px;
-
-height:45px;
-
-display:flex;
-
-align-items:center;
-
-justify-content:center;
-
-
-border-radius:12px;
-
-
-text-decoration:none;
 
 font-size:22px;
 
 
-color:#778;
+font-weight:800;
+
+
+letter-spacing:.12em;
+
+
+
+}
+
+
+
+.admin-brand span{
+
+
+color:var(--neon);
 
 
 }
 
 
 
-nav a.active{
+.admin-brand small{
 
 
-background:#073019;
+display:block;
 
-border:1px solid #39ff88;
 
-color:#39ff88;
+font-family:Inter,sans-serif;
+
+
+font-size:10px;
+
+
+letter-spacing:.3em;
+
+
+color:var(--muted);
+
+
+margin-top:3px;
 
 
 }
+
+
+
+
+.admin-top nav{
+
+
+display:flex;
+
+
+gap:8px;
+
+
+}
+
+
+
+
+.admin-top nav a{
+
+
+width:62px;
+
+
+height:58px;
+
+
+
+display:flex;
+
+
+flex-direction:column;
+
+
+align-items:center;
+
+
+justify-content:center;
+
+
+
+border-radius:16px;
+
+
+
+text-decoration:none;
+
+
+
+color:var(--muted);
+
+
+
+border:
+
+1px solid transparent;
+
+
+
+transition:.25s;
+
+
+
+}
+
+
+
+.admin-top nav a:hover{
+
+
+transform:translateY(-2px);
+
+
+}
+
+
+
+
+.admin-top nav a.active{
+
+
+color:var(--neon);
+
+
+
+background:
+
+rgba(57,255,138,.08);
+
+
+
+border-color:
+
+var(--line);
+
+
+
+box-shadow:
+
+0 0 25px rgba(57,255,138,.18);
+
+
+
+}
+
+
+
+.icon{
+
+
+font-size:22px;
+
+
+line-height:22px;
+
+
+}
+
+
+
+.label{
+
+
+font-size:10px;
+
+
+margin-top:5px;
+
+
+}
+
 
 
 
@@ -152,57 +350,83 @@ color:#39ff88;
 @media(max-width:600px){
 
 
-.top{
 
-height:80px;
+.admin-top{
+
 
 flex-direction:column;
 
-padding:10px;
 
-gap:8px;
+gap:12px;
+
+
+padding:12px 10px;
+
 
 }
 
 
 
-.title{
 
-font-size:16px;
+.admin-brand{
+
+
+font-size:18px;
+
 
 }
 
 
 
-nav{
+.admin-top nav{
+
 
 width:100%;
 
+
 justify-content:space-around;
 
+
+gap:3px;
+
+
+}
+
+
+
+.admin-top nav a{
+
+
+width:54px;
+
+
+height:50px;
+
+
 }
 
 
 
-nav a{
+.label{
 
-width:50px;
 
-height:40px;
-
-}
-
+font-size:9px;
 
 
 }
+
+
+
+}
+
 
 
 
 `}</style>
 
 
-</header>
 
+</header>
 
 )
 
