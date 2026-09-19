@@ -1,0 +1,225 @@
+.header-actions{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:8px;
+  min-width:0;
+}
+
+.header-actions .biz-pill{
+  max-width:154px;
+  overflow:hidden;
+  white-space:nowrap;
+  text-overflow:ellipsis;
+}
+
+.cyber-card{
+  position:relative;
+}
+
+.cyber-card > *:not(.result-rays):not(.opening-flash){
+  position:relative;
+  z-index:1;
+}
+
+.eyebrow,
+.result-kicker{
+  margin-bottom:16px;
+  color:var(--neon);
+  font-family:'Rajdhani', sans-serif;
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:.18em;
+}
+
+.screen-copy{
+  color:var(--muted);
+  font-size:13px;
+  line-height:1.5;
+  margin:0 0 22px;
+}
+
+.reel-copy{
+  margin-top:20px;
+  margin-bottom:0;
+  letter-spacing:.06em;
+}
+
+.case-tap{
+  position:relative;
+  border:0;
+  padding:0;
+  background:none;
+  color:inherit;
+  cursor:pointer;
+  border-radius:24px;
+  -webkit-tap-highlight-color:transparent;
+}
+
+.case-tap .case-thumb{
+  margin-bottom:24px;
+}
+
+.tap-ring{
+  position:absolute;
+  inset:-8px 0 16px;
+  border:1px solid rgba(57,255,138,.45);
+  border-radius:26px;
+  animation:tap-ring 1.55s ease-out infinite;
+  pointer-events:none;
+}
+
+@keyframes tap-ring{
+  0%{ transform:scale(.88); opacity:0; }
+  25%{ opacity:.8; }
+  100%{ transform:scale(1.18); opacity:0; }
+}
+
+.checking-bar{
+  width:min(230px, 72vw);
+  height:4px;
+  overflow:hidden;
+  border-radius:100px;
+  background:rgba(255,255,255,.06);
+  margin:2px 0 14px;
+}
+
+.checking-bar span{
+  display:block;
+  width:42%;
+  height:100%;
+  border-radius:inherit;
+  background:linear-gradient(90deg, transparent, var(--neon), var(--cyan), transparent);
+  box-shadow:0 0 14px var(--neon-soft);
+  animation:checking 1.1s ease-in-out infinite;
+}
+
+@keyframes checking{
+  0%{ transform:translateX(-110%); }
+  100%{ transform:translateX(350%); }
+}
+
+.opening-screen .case-thumb{
+  z-index:2;
+}
+
+.opening-flash{
+  position:absolute;
+  width:230px;
+  height:230px;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-60%);
+  border-radius:50%;
+  background:radial-gradient(circle, rgba(255,255,255,.75) 0%, rgba(57,255,138,.3) 18%, transparent 66%);
+  animation:opening-flash .9s ease-out both;
+  pointer-events:none;
+}
+
+@keyframes opening-flash{
+  0%{ opacity:0; transform:translate(-50%,-60%) scale(.4); }
+  55%{ opacity:1; }
+  100%{ opacity:0; transform:translate(-50%,-60%) scale(1.7); }
+}
+
+.game-reel-track{
+  transition-duration:3.65s;
+}
+
+.result-kicker{
+  margin-bottom:18px;
+}
+
+.result-rays{
+  position:absolute;
+  top:4px;
+  left:50%;
+  width:280px;
+  height:280px;
+  transform:translateX(-50%);
+  opacity:.24;
+  pointer-events:none;
+  background:repeating-conic-gradient(from 0deg, transparent 0deg 13deg, var(--tier-color, var(--neon)) 14deg 15deg, transparent 16deg 29deg);
+  -webkit-mask-image:radial-gradient(circle, #000 0%, transparent 69%);
+  mask-image:radial-gradient(circle, #000 0%, transparent 69%);
+  animation:ray-spin 16s linear infinite;
+}
+
+@keyframes ray-spin{
+  to{ transform:translateX(-50%) rotate(360deg); }
+}
+
+.reward-hint{
+  color:var(--muted);
+  font-size:13px;
+  line-height:1.45;
+  max-width:300px;
+  margin:0 0 20px;
+}
+
+.message-card{
+  margin:auto 0;
+}
+
+.message-card > p{
+  color:var(--muted);
+  max-width:290px;
+  line-height:1.5;
+}
+
+.message-icon{
+  width:76px;
+  height:76px;
+  display:grid;
+  place-items:center;
+  border-radius:22px;
+  margin-bottom:20px;
+  border:1px solid var(--line);
+  background:var(--panel);
+  color:var(--neon);
+  font-family:'Rajdhani', sans-serif;
+  font-size:22px;
+  font-weight:700;
+  box-shadow:0 0 40px -14px var(--neon-soft);
+}
+
+.message-icon.error{
+  color:var(--danger);
+  border-color:rgba(255,107,107,.4);
+  box-shadow:0 0 40px -14px rgba(255,107,107,.5);
+}
+
+.app-loader{
+  margin:auto;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:16px;
+  color:var(--muted);
+  z-index:1;
+}
+
+.app-loader span{
+  width:42px;
+  height:42px;
+  border-radius:50%;
+  border:2px solid var(--line-dim);
+  border-top-color:var(--neon);
+  box-shadow:0 0 18px -7px var(--neon);
+  animation:loader-spin .8s linear infinite;
+}
+
+.app-loader p{
+  margin:0;
+  font-size:12px;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+}
+
+@keyframes loader-spin{
+  to{ transform:rotate(360deg); }
+}
+
+@media (max-width:600px){
+  .header-actions .biz-pill{ max-width:124px; }
+}
