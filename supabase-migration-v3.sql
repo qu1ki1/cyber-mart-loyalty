@@ -36,3 +36,25 @@ create index if not exists users_username_business_idx on users (lower(username)
 -- ничего менять не нужно, просто теперь они реально используются для
 -- разделения данных между бизнесами (раньше был только один бизнес,
 -- так что это не проверялось).
+
+-- Роли: отдельный пароль для персонала (может только гасить коды,
+-- не может настраивать призы/бренд и выдавать бонусные попытки).
+alter table businesses add column if not exists staff_password text;
+
+-- Для CRM-напоминания о сгорающем подарке.
+alter table winners add column if not exists reminded boolean default false;
+
+-- Реферальная система: кто кого привёл (в рамках одного бизнеса).
+alter table users add column if not exists referred_by bigint;
+
+-- Роль MANAGER: как Staff (касса), но ещё может выдавать бонусные
+-- попытки — без доступа к призам, бренду и удалению гостей.
+alter table businesses add column if not exists manager_password text;
+
+-- Для win-back автоматизации ("после отсутствия").
+alter table users add column if not exists last_spin_at timestamptz;
+alter table users add column if not exists winback_sent_at timestamptz;
+
+-- White Label: свой домен для бизнеса (Enterprise).
+alter table businesses add column if not exists custom_domain text;
+create unique index if not exists businesses_domain_idx on businesses (lower(custom_domain)) where custom_domain is not null;

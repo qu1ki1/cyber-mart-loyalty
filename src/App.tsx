@@ -5,6 +5,7 @@ import CaseBox from './components/CaseBox'
 import Reel, { type Rarity } from './components/Reel'
 import RewardResult from './components/RewardResult'
 import type { IconKey } from './components/Icon'
+import { applyTheme } from './themes'
 
 import './App.css'
 
@@ -15,6 +16,7 @@ type Business = {
   name: string
   logo_url?: string | null
   primary_color?: string | null
+  design_theme?: string | null
   description?: string | null
 }
 
@@ -37,6 +39,15 @@ function getBusinessSlug(): string | null {
   return startParam || null
 }
 
+// White Label: если бизнес открыт со своего домена (не общего), у нас
+// нет slug в адресе — определяем бизнес по имени хоста.
+async function fetchBusinessByDomain(): Promise<Business | null> {
+  const hostname = window.location.hostname
+  const res = await fetch(`/api/business-settings?domain=${encodeURIComponent(hostname)}`)
+  if (!res.ok) return null
+  return res.json()
+}
+
 async function fetchBusiness(slug: string): Promise<Business | null> {
   const res = await fetch(`/api/business-settings?slug=${encodeURIComponent(slug)}`)
   if (!res.ok) return null
@@ -48,15 +59,29 @@ async function fetchStatus(telegramId: number, slug: string): Promise<SpinResult
   return res.json()
 }
 
-async function requestSpin(telegramId: number, slug: string, firstName?: string, username?: string): Promise<SpinResult> {
+async function requestSpin(telegramId: number, slug: string, firstName?: string, username?: string, ref?: string | null): Promise<SpinResult> {
   const res = await fetch('/api/spin', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ telegram_id: telegramId, slug, first_name: firstName, username }),
+    body: JSON.stringify({ telegram_id: telegramId, slug, first_name: firstName, username, ref }),
   })
   const data = await res.json()
   if (!res.ok) throw new Error(data.error || 'Не удалось открыть кейс')
   return data
+}
+
+const BOT_USERNAME = import.meta.env.VITE_BOT_USERNAME || ''
+
+function shareReferral(telegramId: number, slug: string) {
+  if (!BOT_USERNAME) return
+  const deepLink = `https://t.me/${BOT_USERNAME}?start=${slug}-ref-${telegramId}`
+  const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(deepLink)}&text=${encodeURIComponent('Забери свой подарок 🎁')}`
+  const tg = window.Telegram?.WebApp
+  if (tg && (tg as unknown as { openTelegramLink?: (url: string) => void }).openTelegramLink) {
+    ;(tg as unknown as { openTelegramLink: (url: string) => void }).openTelegramLink(shareUrl)
+  } else {
+    window.open(shareUrl, '_blank')
+  }
 }
 
 export default function App() {
@@ -78,16 +103,25 @@ export default function App() {
     }
 
     const slug = getBusinessSlug()
-    if (!slug) {
-      setBusinessError('Открой это приложение по QR-коду в заведении — так мы поймём, какой бизнес тебе показать.')
+    if (slug) {
+      fetchBusiness(slug).then((b) => {
+        if (!b) {
+          setBusinessError('Бизнес не найден — возможно, ссылка устарела.')
+        } else {
+          setBusiness(b)
+          applyTheme(b.design_theme, b.primary_color)
+        }
+      })
       return
     }
-    fetchBusiness(slug).then((b) => {
+
+    // Нет slug в адресе — пробуем определить бизнес по домену (White Label).
+    fetchBusinessByDomain().then((b) => {
       if (!b) {
-        setBusinessError('Бизнес не найден — возможно, ссылка устарела.')
+        setBusinessError('Открой это приложение по QR-коду в заведении — так мы поймём, какой бизнес тебе показать.')
       } else {
         setBusiness(b)
-        if (b.primary_color) document.documentElement.style.setProperty('--neon', b.primary_color)
+        applyTheme(b.design_theme, b.primary_color)
       }
     })
   }, [])
@@ -110,7 +144,8 @@ export default function App() {
     setScreen('roll')
 
     try {
-      const spin = await requestSpin(telegramUser.id, business.slug, telegramUser.first_name, telegramUser.username)
+      const ref = new URLSearchParams(window.location.search).get('ref')
+      const spin = await requestSpin(telegramUser.id, business.slug, telegramUser.first_name, telegramUser.username, ref)
       setResult(spin)
     } catch (err) {
       setScreen('open')
@@ -181,6 +216,11 @@ export default function App() {
                     Открыть кейс
                   </button>
                   {error && <div className="status-pill error">{error}</div>}
+                  {BOT_USERNAME && telegramUser && (
+                    <button className="ghost" onClick={() => shareReferral(telegramUser.id, business.slug)}>
+                      Пригласить друга (+1 попытка тебе)
+                    </button>
+                  )}
                 </>
               )}
             </motion.div>

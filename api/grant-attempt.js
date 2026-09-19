@@ -18,8 +18,14 @@ export default async function handler(req, res) {
   if (!cleanUsername) return res.status(400).json({ error: 'Укажи username гостя' })
 
   try {
-    const { data: business } = await supabase.from('businesses').select('id, owner_password').ilike('slug', slug).maybeSingle()
-    if (!business || business.owner_password !== password) {
+    const { data: business } = await supabase
+      .from('businesses')
+      .select('id, owner_password, manager_password')
+      .ilike('slug', slug)
+      .maybeSingle()
+
+    const validPasswords = [business?.owner_password, business?.manager_password].filter(Boolean)
+    if (!business || !validPasswords.includes(password)) {
       return res.status(401).json({ error: 'Неверный пароль администратора' })
     }
 

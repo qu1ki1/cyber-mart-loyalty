@@ -5,6 +5,7 @@ import {
   getUsers,
   type User
 } from "./supabaseAdmin";
+import { ADMIN_BUSINESS_ID_KEY } from "./AdminGate";
 
 
 
@@ -36,8 +37,9 @@ load();
 async function load(){
 
 
+const businessId = Number(sessionStorage.getItem(ADMIN_BUSINESS_ID_KEY));
 const data =
-await getUsers();
+await getUsers(businessId);
 
 
 setUsers(data);

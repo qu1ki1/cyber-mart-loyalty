@@ -19,9 +19,14 @@ const PUBLIC_FIELDS = 'id, slug, name, logo_url, primary_color, design_theme, de
 export default async function handler(req, res) {
   if (req.method === 'GET') {
     const slug = req.query.slug
-    if (!slug) return res.status(400).json({ error: 'Не указан бизнес' })
+    const domain = req.query.domain
 
-    const { data, error } = await supabase.from('businesses').select(PUBLIC_FIELDS).ilike('slug', slug).maybeSingle()
+    let query = supabase.from('businesses').select(PUBLIC_FIELDS)
+    if (slug) query = query.ilike('slug', slug)
+    else if (domain) query = query.ilike('custom_domain', domain)
+    else return res.status(400).json({ error: 'Не указан бизнес' })
+
+    const { data, error } = await query.maybeSingle()
     if (error) return res.status(500).json({ error: error.message })
     if (!data) return res.status(404).json({ error: 'Бизнес не найден' })
     return res.status(200).json(data)
@@ -44,13 +49,16 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'PUT') {
-    const { name, logo_url, primary_color, design_theme, description } = req.body || {}
+    const { name, logo_url, primary_color, design_theme, description, staff_password, manager_password, custom_domain } = req.body || {}
     const updates = {}
     if (name !== undefined) updates.name = name
     if (logo_url !== undefined) updates.logo_url = logo_url
     if (primary_color !== undefined) updates.primary_color = primary_color
     if (design_theme !== undefined) updates.design_theme = design_theme
     if (description !== undefined) updates.description = description
+    if (staff_password !== undefined) updates.staff_password = staff_password
+    if (manager_password !== undefined) updates.manager_password = manager_password
+    if (custom_domain !== undefined) updates.custom_domain = custom_domain || null
 
     const { data, error: updateError } = await supabase
       .from('businesses')

@@ -1,12 +1,10 @@
 import { useState } from 'react'
 
-const SESSION_KEY = 'cyberMartAdminUnlocked'
-export const ADMIN_PASSWORD_KEY = 'cyberMartAdminPassword'
-export const ADMIN_SLUG_KEY = 'cyberMartAdminSlug'
-export const ADMIN_BUSINESS_NAME_KEY = 'cyberMartAdminBusinessName'
-export const ADMIN_BUSINESS_ID_KEY = 'cyberMartAdminBusinessId'
+const SESSION_KEY = 'cyberMartStaffUnlocked'
+export const STAFF_PASSWORD_KEY = 'cyberMartAdminPassword' // тот же ключ, что и у владельца —
+export const STAFF_SLUG_KEY = 'cyberMartAdminSlug' // RedeemCard читает именно их, независимо от роли
 
-export default function AdminGate({ children }: { children: React.ReactNode }) {
+export default function StaffGate({ children }: { children: React.ReactNode }) {
   const [unlocked, setUnlocked] = useState(() => sessionStorage.getItem(SESSION_KEY) === '1')
   const [slug, setSlug] = useState('')
   const [password, setPassword] = useState('')
@@ -19,7 +17,7 @@ export default function AdminGate({ children }: { children: React.ReactNode }) {
     setError(null)
 
     try {
-      const res = await fetch('/api/business-settings', {
+      const res = await fetch('/api/staff-login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ slug, password }),
@@ -28,10 +26,8 @@ export default function AdminGate({ children }: { children: React.ReactNode }) {
 
       if (res.ok) {
         sessionStorage.setItem(SESSION_KEY, '1')
-        sessionStorage.setItem(ADMIN_PASSWORD_KEY, password)
-        sessionStorage.setItem(ADMIN_SLUG_KEY, slug)
-        sessionStorage.setItem(ADMIN_BUSINESS_NAME_KEY, data.name || slug)
-        sessionStorage.setItem(ADMIN_BUSINESS_ID_KEY, String(data.id))
+        sessionStorage.setItem(STAFF_PASSWORD_KEY, password)
+        sessionStorage.setItem(STAFF_SLUG_KEY, slug)
         setUnlocked(true)
       } else {
         setError(data.error || 'Неверный пароль')
@@ -51,7 +47,7 @@ export default function AdminGate({ children }: { children: React.ReactNode }) {
       <div className="bg-glow" />
       <div className="admin-login">
         <div className="wordmark">
-          LOYAL<span>TY</span> ADMIN
+          LOYAL<span>TY</span> STAFF
         </div>
         <form onSubmit={handleSubmit}>
           <input
@@ -63,7 +59,7 @@ export default function AdminGate({ children }: { children: React.ReactNode }) {
           />
           <input
             type="password"
-            placeholder="Пароль администратора"
+            placeholder="Пароль персонала"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />

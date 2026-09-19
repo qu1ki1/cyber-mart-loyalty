@@ -70,14 +70,56 @@ export default async function handler(req, res) {
     if (!business) return res.status(404).json({ error: 'Бизнес не найден — проверь ссылку/QR' })
 
     if (req.method === 'POST') {
-      const { first_name, username } = req.body || {}
+      const { first_name, username, ref } = req.body || {}
+      const referrerId = ref ? Number(ref) : null
+
+      const { data: existingUser } = await supabase
+        .from('users')
+        .select('telegram_id, referred_by')
+        .eq('telegram_id', telegramId)
+        .eq('business_id', business.id)
+        .maybeSingle()
+
+      const isNewUser = !existingUser
+      const validReferral = referrerId && referrerId !== telegramId
+
       await supabase
         .from('users')
         .upsert(
-          { telegram_id: telegramId, business_id: business.id, first_name: first_name || '', username: username || null },
+          {
+            telegram_id: telegramId,
+            business_id: business.id,
+            first_name: first_name || '',
+            username: username || null,
+            ...(isNewUser && validReferral ? { referred_by: referrerId } : {}),
+          },
           { onConflict: 'telegram_id,business_id' }
         )
+
+      // Награждаем пригласившего — только один раз, при первом визите приглашённого.
+      if (isNewUser && validReferral) {
+        const { data: referrer } = await supabase
+          .from('users')
+          .select('bonus_attempts')
+          .eq('telegram_id', referrerId)
+          .eq('business_id', business.id)
+          .maybeSingle()
+
+        if (referrer) {
+          await supabase
+            .from('users')
+            .update({ bonus_attempts: (referrer.bonus_attempts || 0) + 1 })
+            .eq('telegram_id', referrerId)
+            .eq('business_id', business.id)
+        }
+      }
     }
+
+        await supabase
+      .from('users')
+      .update({ last_spin_at: new Date().toISOString() })
+      .eq('telegram_id', telegramId)
+      .eq('business_id', business.id)
 
     const { data: userRow } = await supabase
       .from('users')

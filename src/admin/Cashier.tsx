@@ -66,7 +66,7 @@ export default function Cashier() {
   )
 }
 
-function RedeemCard() {
+export function RedeemCard() {
   const [code, setCode] = useState('')
   const [busy, setBusy] = useState(false)
   const [result, setResult] = useState<{ gift_name: string; guest_name: string } | null>(null)

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 
 import { supabase } from "../supabase";
+import { ADMIN_BUSINESS_ID_KEY } from "./AdminGate";
 
 
 
@@ -21,6 +22,8 @@ created_at:string;
 
 
 export default function Winners(){
+
+const businessId = Number(sessionStorage.getItem(ADMIN_BUSINESS_ID_KEY));
 
 
 const [winners,setWinners]=
@@ -53,6 +56,8 @@ await supabase
 .from("winners")
 
 .select("*")
+
+.eq("business_id", businessId)
 
 .order(
 "created_at",

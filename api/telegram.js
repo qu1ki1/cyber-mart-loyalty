@@ -15,9 +15,16 @@ export default async function handler(req, res) {
       const chatId = body.message.chat.id
       const text = body.message.text || ''
       const parts = text.split(' ')
-      const slug = parts.length > 1 ? parts[1].trim() : ''
+      const payload = parts.length > 1 ? parts[1].trim() : ''
 
-      const appUrl = slug ? `${APP_URL}/?biz=${encodeURIComponent(slug)}` : APP_URL
+      // Формат реферальной ссылки: <slug>-ref-<telegram_id пригласившего>
+      const refMatch = payload.match(/^(.+)-ref-(\d+)$/)
+      const slug = refMatch ? refMatch[1] : payload
+      const ref = refMatch ? refMatch[2] : ''
+
+      const appUrl = slug
+        ? `${APP_URL}/?biz=${encodeURIComponent(slug)}${ref ? `&ref=${encodeURIComponent(ref)}` : ''}`
+        : APP_URL
 
       await fetch(`https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendMessage`, {
         method: 'POST',

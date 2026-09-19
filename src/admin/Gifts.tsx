@@ -8,10 +8,13 @@ import {
   deleteGift,
   type Gift
 } from "./supabaseAdmin";
+import { ADMIN_BUSINESS_ID_KEY } from "./AdminGate";
 
 
 
 export default function Gifts(){
+
+const businessId = Number(sessionStorage.getItem(ADMIN_BUSINESS_ID_KEY));
 
 
 const [gifts,setGifts]=useState<Gift[]>([]);
@@ -31,7 +34,7 @@ quantity:0
 
 async function load(){
 
-const data = await getGifts();
+const data = await getGifts(businessId);
 
 setGifts(data);
 
@@ -68,7 +71,7 @@ quantity:form.quantity,
 
 active:true
 
-});
+}, businessId);
 
 
 
@@ -367,7 +370,9 @@ await toggleGift(
 
 gift.id,
 
-!gift.active
+!gift.active,
+
+businessId
 
 );
 
@@ -405,7 +410,7 @@ className="delete-btn"
 onClick={async()=>{
 
 
-await deleteGift(gift.id);
+await deleteGift(gift.id, businessId);
 
 load();
 

@@ -5,6 +5,7 @@ import {
   getUsers,
   type User
 } from "./supabaseAdmin";
+import { ADMIN_BUSINESS_ID_KEY } from "./AdminGate";
 
 
 
@@ -97,7 +98,7 @@ useState(true);
 useEffect(()=>{
 
 
-getUsers()
+getUsers(Number(sessionStorage.getItem(ADMIN_BUSINESS_ID_KEY)))
 
 .then(setUsers)
 

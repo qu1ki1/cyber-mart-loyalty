@@ -1,19 +1,23 @@
 import { useEffect, useState } from 'react'
 import { ADMIN_PASSWORD_KEY, ADMIN_SLUG_KEY, ADMIN_BUSINESS_NAME_KEY } from './AdminGate'
+import { THEMES, THEME_LABELS, type ThemeKey } from '../themes'
 
 type Business = {
   name: string
   logo_url?: string | null
   primary_color?: string | null
-  design_theme?: string | null
+  design_theme?: ThemeKey | null
   description?: string | null
+  staff_password?: string
+  manager_password?: string
+  custom_domain?: string | null
 }
 
 export default function BusinessSettings() {
   const slug = sessionStorage.getItem(ADMIN_SLUG_KEY) || ''
   const password = sessionStorage.getItem(ADMIN_PASSWORD_KEY) || ''
 
-  const [form, setForm] = useState<Business>({ name: '', logo_url: '', primary_color: '#39ff8a', description: '' })
+  const [form, setForm] = useState<Business>({ name: '', logo_url: '', primary_color: '#39ff8a', description: '', staff_password: '', manager_password: '', custom_domain: '' })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -27,7 +31,11 @@ export default function BusinessSettings() {
           name: data.name || '',
           logo_url: data.logo_url || '',
           primary_color: data.primary_color || '#39ff8a',
+          design_theme: data.design_theme || 'neon_gaming',
           description: data.description || '',
+          staff_password: '',
+          manager_password: '',
+          custom_domain: data.custom_domain || '',
         })
       })
       .finally(() => setLoading(false))
@@ -40,10 +48,14 @@ export default function BusinessSettings() {
     setError(null)
 
     try {
+      const payload: Business & { slug: string; password: string } = { slug, password, ...form }
+      if (!payload.staff_password) delete payload.staff_password // пустое поле = не менять
+      if (!payload.manager_password) delete payload.manager_password
+
       const res = await fetch('/api/business-settings', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ slug, password, ...form }),
+        body: JSON.stringify(payload),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Не удалось сохранить')
@@ -87,6 +99,61 @@ export default function BusinessSettings() {
           onChange={(e) => setForm({ ...form, description: e.target.value })}
           rows={3}
         />
+
+        <label>Дизайн-тема</label>
+        <select
+          value={form.design_theme || 'neon_gaming'}
+          onChange={(e) => setForm({ ...form, design_theme: e.target.value as ThemeKey })}
+          style={{
+            padding: '12px 14px',
+            borderRadius: 12,
+            border: '1px solid var(--line)',
+            background: 'rgba(0,0,0,.25)',
+            color: '#eef7f0',
+            fontFamily: 'Rajdhani',
+            fontSize: 15,
+          }}
+        >
+          {(Object.keys(THEMES) as ThemeKey[]).map((key) => (
+            <option key={key} value={key}>
+              {THEME_LABELS[key]}
+            </option>
+          ))}
+        </select>
+
+        <label>Пароль для персонала (касса)</label>
+        <input
+          type="text"
+          value={form.staff_password || ''}
+          onChange={(e) => setForm({ ...form, staff_password: e.target.value })}
+          placeholder="Оставь пустым, если не хочешь менять"
+        />
+        <p style={{ color: 'var(--muted)', fontSize: 12, marginTop: -2, marginBottom: 4 }}>
+          Персонал заходит на /staff по этому паролю — видит только «Погасить код», ничего больше.
+        </p>
+
+        <label>Пароль для управляющего (касса + выдача попыток)</label>
+        <input
+          type="text"
+          value={form.manager_password || ''}
+          onChange={(e) => setForm({ ...form, manager_password: e.target.value })}
+          placeholder="Оставь пустым, если не хочешь менять"
+        />
+        <p style={{ color: 'var(--muted)', fontSize: 12, marginTop: -2, marginBottom: 4 }}>
+          Управляющий заходит на /manager — может гасить коды и выдавать бонусные попытки,
+          но не видит призы, бренд и не может ничего удалить.
+        </p>
+
+        <label>Свой домен (White Label, необязательно)</label>
+        <input
+          value={form.custom_domain || ''}
+          onChange={(e) => setForm({ ...form, custom_domain: e.target.value })}
+          placeholder="loyalty.твой-домен.ru"
+        />
+        <p style={{ color: 'var(--muted)', fontSize: 12, marginTop: -2, marginBottom: 4 }}>
+          После сохранения ещё нужно добавить этот домен в Vercel → Settings → Domains
+          и настроить DNS у регистратора — это шаг руками, автоматически не делается.
+        </p>
 
         <button className="biz-settings-btn" type="submit" disabled={saving}>
           {saving ? 'Сохранение…' : saved ? 'Сохранено ✓' : 'Сохранить'}
