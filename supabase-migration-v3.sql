@@ -58,3 +58,28 @@ alter table users add column if not exists winback_sent_at timestamptz;
 -- White Label: свой домен для бизнеса (Enterprise).
 alter table businesses add column if not exists custom_domain text;
 create unique index if not exists businesses_domain_idx on businesses (lower(custom_domain)) where custom_domain is not null;
+
+-- Управление через бота: конкретные Telegram-аккаунты привязываются
+-- к бизнесу с ролью — команды в чате с ботом работают без пароля.
+create table if not exists admins (
+  id bigserial primary key,
+  business_id integer references businesses(id) not null,
+  telegram_id bigint not null,
+  role text not null check (role in ('owner','manager','staff')),
+  added_at timestamptz default now(),
+  unique(business_id, telegram_id)
+);
+create index if not exists admins_telegram_idx on admins (telegram_id);
+
+-- Приглашение сотрудника/управляющего прямо из приложения (без пароля).
+-- Владелец создаёт приглашение в приложении, получает ссылку — тот, кто
+-- по ней перейдёт, автоматически привязывается нужной ролью.
+create table if not exists invites (
+  id bigserial primary key,
+  business_id integer references businesses(id) not null,
+  role text not null check (role in ('manager','staff')),
+  code text unique not null,
+  created_at timestamptz default now(),
+  used_by bigint,
+  used_at timestamptz
+);

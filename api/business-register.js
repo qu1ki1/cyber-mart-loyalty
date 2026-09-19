@@ -1,7 +1,5 @@
 // api/business-register.js
-//
-// Регистрация нового бизнеса на платформе.
-// POST /api/business-register  { name, slug, password }
+// POST /api/business-register  { name, telegram_id }
 
 import { createClient } from '@supabase/supabase-js'
 
@@ -17,54 +15,32 @@ function slugify(input) {
 }
 
 const DEFAULT_GIFTS = [
-  { key: 'r30', name: '+30 минут', weight: 40, icon: 'clock', prefix: 'G1', rarity: 'common', chance: 40, active: true },
-  { key: 'r60', name: '+1 час', weight: 20, icon: 'clockBig', prefix: 'G2', rarity: 'uncommon', chance: 20, active: true },
-  { key: 'drink', name: 'Подарок', weight: 20, icon: 'cup', prefix: 'G3', rarity: 'rare', chance: 20, active: true },
-  { key: 'discount', name: 'Скидка 10%', weight: 15, icon: 'percent', prefix: 'G4', rarity: 'epic', chance: 15, active: true },
-  { key: 'jackpot', name: 'Джекпот', weight: 5, icon: 'star', prefix: 'G5', rarity: 'legendary', chance: 5, active: true },
+  { name: '+30 минут', chance: 40, icon: 'clock', rarity: 'common', active: true },
+  { name: '+1 час', chance: 20, icon: 'clockBig', rarity: 'uncommon', active: true },
+  { name: 'Подарок', chance: 20, icon: 'cup', rarity: 'rare', active: true },
+  { name: 'Скидка 10%', chance: 15, icon: 'percent', rarity: 'epic', active: true },
+  { name: 'Джекпот', chance: 5, icon: 'star', rarity: 'legendary', active: true },
 ]
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Метод не поддерживается' })
-  }
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Метод не поддерживается' })
 
-  const { name, slug: rawSlug, password } = req.body || {}
-
-  if (!name || !password) {
-    return res.status(400).json({ error: 'Укажи название бизнеса и пароль' })
-  }
-  if (password.length < 4) {
-    return res.status(400).json({ error: 'Пароль слишком короткий (минимум 4 символа)' })
-  }
-
-  const slug = slugify(rawSlug || name)
-  if (!slug) {
-    return res.status(400).json({ error: 'Не удалось составить ссылку из названия, попробуй другое' })
-  }
+  const { name, telegram_id } = req.body || {}
+  const telegramId = Number(telegram_id)
+  if (!name || !telegramId) return res.status(400).json({ error: 'Укажи название бизнеса' })
 
   try {
-    const { data: existing } = await supabase.from('businesses').select('id').ilike('slug', slug).maybeSingle()
-    if (existing) {
-      return res.status(409).json({ error: `Ссылка "${slug}" уже занята, придумай другую` })
-    }
+    let slug = slugify(name)
+    const { data: taken } = await supabase.from('businesses').select('id').ilike('slug', slug).maybeSingle()
+    if (taken) slug = `${slug}-${Math.floor(Math.random() * 900 + 100)}`
 
-    const { data: business, error } = await supabase
-      .from('businesses')
-      .insert({ name, slug, owner_password: password })
-      .select()
-      .single()
-
+    const { data: business, error } = await supabase.from('businesses').insert({ name, slug }).select().single()
     if (error) throw error
 
     await supabase.from('gifts').insert(DEFAULT_GIFTS.map((g) => ({ ...g, business_id: business.id })))
+    await supabase.from('admins').insert({ business_id: business.id, telegram_id: telegramId, role: 'owner' })
 
-    return res.status(200).json({
-      id: business.id,
-      slug: business.slug,
-      name: business.name,
-      deep_link_hint: `t.me/<твой_бот>?start=${business.slug}`,
-    })
+    return res.status(200).json({ id: business.id, slug: business.slug, name: business.name })
   } catch (err) {
     console.error(err)
     return res.status(500).json({ error: err.message || 'Внутренняя ошибка' })

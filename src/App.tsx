@@ -6,18 +6,29 @@ import Reel, { type Rarity } from './components/Reel'
 import RewardResult from './components/RewardResult'
 import type { IconKey } from './components/Icon'
 import { applyTheme } from './themes'
+import AdminPanel from './adminpanel/AdminPanel'
+import RegisterInApp from './adminpanel/RegisterInApp'
 
 import './App.css'
 
 type Screen = 'open' | 'roll' | 'result'
+type Role = 'owner' | 'manager' | 'staff'
+type Mode = 'game' | 'panel'
 
 type Business = {
+  id: number
   slug: string
   name: string
   logo_url?: string | null
   primary_color?: string | null
   design_theme?: string | null
   description?: string | null
+}
+
+type MyContext = {
+  business: Business | null
+  role: Role | null
+  my_businesses: (Business & { role: Role })[]
 }
 
 type SpinResult = {
@@ -31,25 +42,16 @@ type SpinResult = {
   error?: string
 }
 
+const BOT_USERNAME = import.meta.env.VITE_BOT_USERNAME || ''
+
 function getBusinessSlug(): string | null {
-  const fromQuery = new URLSearchParams(window.location.search).get('biz')
-  if (fromQuery) return fromQuery
-  // запасной вариант, если мини-апп открыли напрямую по startapp-ссылке
-  const startParam = window.Telegram?.WebApp?.initDataUnsafe?.start_param
-  return startParam || null
+  return new URLSearchParams(window.location.search).get('biz')
 }
 
-// White Label: если бизнес открыт со своего домена (не общего), у нас
-// нет slug в адресе — определяем бизнес по имени хоста.
-async function fetchBusinessByDomain(): Promise<Business | null> {
-  const hostname = window.location.hostname
-  const res = await fetch(`/api/business-settings?domain=${encodeURIComponent(hostname)}`)
-  if (!res.ok) return null
-  return res.json()
-}
-
-async function fetchBusiness(slug: string): Promise<Business | null> {
-  const res = await fetch(`/api/business-settings?slug=${encodeURIComponent(slug)}`)
+async function fetchContext(telegramId: number, slug: string | null): Promise<MyContext | null> {
+  const params = new URLSearchParams({ telegram_id: String(telegramId) })
+  if (slug) params.set('slug', slug)
+  const res = await fetch(`/api/my-context?${params.toString()}`)
   if (!res.ok) return null
   return res.json()
 }
@@ -70,8 +72,6 @@ async function requestSpin(telegramId: number, slug: string, firstName?: string,
   return data
 }
 
-const BOT_USERNAME = import.meta.env.VITE_BOT_USERNAME || ''
-
 function shareReferral(telegramId: number, slug: string) {
   if (!BOT_USERNAME) return
   const deepLink = `https://t.me/${BOT_USERNAME}?start=${slug}-ref-${telegramId}`
@@ -85,11 +85,13 @@ function shareReferral(telegramId: number, slug: string) {
 }
 
 export default function App() {
+  const [telegramUser, setTelegramUser] = useState<{ id: number; first_name?: string; username?: string } | null>(null)
+  const [context, setContext] = useState<MyContext | null>(null)
+  const [loadError, setLoadError] = useState<string | null>(null)
+
+  const [mode, setMode] = useState<Mode>('game')
   const [screen, setScreen] = useState<Screen>('open')
   const [result, setResult] = useState<SpinResult | null>(null)
-  const [business, setBusiness] = useState<Business | null>(null)
-  const [businessError, setBusinessError] = useState<string | null>(null)
-  const [telegramUser, setTelegramUser] = useState<{ id: number; first_name?: string; username?: string } | null>(null)
   const [error, setError] = useState<string | null>(null)
   const busy = useRef(false)
 
@@ -101,51 +103,52 @@ export default function App() {
       const user = tg.initDataUnsafe?.user
       if (user) setTelegramUser({ id: user.id, first_name: user.first_name, username: user.username })
     }
-
-    const slug = getBusinessSlug()
-    if (slug) {
-      fetchBusiness(slug).then((b) => {
-        if (!b) {
-          setBusinessError('Бизнес не найден — возможно, ссылка устарела.')
-        } else {
-          setBusiness(b)
-          applyTheme(b.design_theme, b.primary_color)
-        }
-      })
-      return
-    }
-
-    // Нет slug в адресе — пробуем определить бизнес по домену (White Label).
-    fetchBusinessByDomain().then((b) => {
-      if (!b) {
-        setBusinessError('Открой это приложение по QR-коду в заведении — так мы поймём, какой бизнес тебе показать.')
-      } else {
-        setBusiness(b)
-        applyTheme(b.design_theme, b.primary_color)
-      }
-    })
   }, [])
 
   useEffect(() => {
-    if (!telegramUser || !business) return
-    fetchStatus(telegramUser.id, business.slug)
+    if (!telegramUser) return
+    const slug = getBusinessSlug()
+    fetchContext(telegramUser.id, slug).then((ctx) => {
+      if (!ctx) {
+        setLoadError('Не удалось загрузить приложение. Проверь соединение и попробуй ещё раз.')
+        return
+      }
+      setContext(ctx)
+
+      const resolved = ctx.business || ctx.my_businesses[0] || null
+      if (resolved) applyTheme(resolved.design_theme, resolved.primary_color)
+
+      // Если QR/ссылка привела к конкретному бизнесу — по умолчанию игра.
+      // Если открыли бота "просто так" и это владелец/сотрудник — сразу панель.
+      if (!ctx.business && ctx.my_businesses.length > 0) setMode('panel')
+    })
+  }, [telegramUser])
+
+  const activeBusiness: (Business & { role?: Role | null }) | null =
+    context?.business || context?.my_businesses[0] || null
+  const activeRole: Role | null = context?.business ? context.role : context?.my_businesses[0]?.role || null
+
+  useEffect(() => {
+    if (!telegramUser || !activeBusiness) return
+    fetchStatus(telegramUser.id, activeBusiness.slug)
       .then((status) => {
         if (status.already_spun) setResult(status)
       })
       .catch(() => {})
-  }, [telegramUser, business])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [telegramUser, activeBusiness?.slug])
 
   const alreadySpun = !!result?.already_spun
 
   async function openCase() {
-    if (busy.current || alreadySpun || !telegramUser || !business) return
+    if (busy.current || alreadySpun || !telegramUser || !activeBusiness) return
     busy.current = true
     setError(null)
     setScreen('roll')
 
     try {
       const ref = new URLSearchParams(window.location.search).get('ref')
-      const spin = await requestSpin(telegramUser.id, business.slug, telegramUser.first_name, telegramUser.username, ref)
+      const spin = await requestSpin(telegramUser.id, activeBusiness.slug, telegramUser.first_name, telegramUser.username, ref)
       setResult(spin)
     } catch (err) {
       setScreen('open')
@@ -155,20 +158,31 @@ export default function App() {
     }
   }
 
-  if (businessError) {
+  function handleBusinessCreated(slug: string) {
+    if (!telegramUser) return
+    fetchContext(telegramUser.id, slug).then((ctx) => {
+      if (ctx) {
+        setContext(ctx)
+        setMode('panel')
+      }
+    })
+  }
+
+  // ---------- экраны загрузки/ошибок ----------
+  if (loadError) {
     return (
       <div className="app">
         <div className="bg-grid" />
         <div className="bg-glow" />
         <div className="cyber-card">
           <h1>Хм…</h1>
-          <div className="status-pill error">{businessError}</div>
+          <div className="status-pill error">{loadError}</div>
         </div>
       </div>
     )
   }
 
-  if (!business) {
+  if (!telegramUser || !context) {
     return (
       <div className="app">
         <div className="bg-grid" />
@@ -176,6 +190,19 @@ export default function App() {
       </div>
     )
   }
+
+  // ---------- нет бизнеса вообще — предлагаем создать прямо тут ----------
+  if (!activeBusiness) {
+    return (
+      <div className="app">
+        <div className="bg-grid" />
+        <div className="bg-glow" />
+        <RegisterInApp telegramId={telegramUser.id} onCreated={handleBusinessCreated} />
+      </div>
+    )
+  }
+
+  const isAdmin = !!activeRole
 
   return (
     <div className="app">
@@ -187,68 +214,90 @@ export default function App() {
           <div className="wordmark">
             LOYAL<span>TY</span>
           </div>
-          {telegramUser?.first_name && <div className="greeting">Привет, {telegramUser.first_name}</div>}
+          {telegramUser.first_name && <div className="greeting">Привет, {telegramUser.first_name}</div>}
         </div>
-        <div className="biz-pill">{business.name}</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div className="biz-pill">{activeBusiness.name}</div>
+          {isAdmin && (
+            <button className="gear-btn" onClick={() => setMode(mode === 'game' ? 'panel' : 'game')} aria-label="Переключить режим">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M12 15.5a3.5 3.5 0 100-7 3.5 3.5 0 000 7z"
+                  stroke="currentColor"
+                  strokeWidth="1.6"
+                />
+                <path
+                  d="M19.4 13a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V19a2 2 0 11-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H4a2 2 0 110-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H10a1.65 1.65 0 001-1.51V4a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V10a1.65 1.65 0 001.51 1H20a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"
+                  stroke="currentColor"
+                  strokeWidth="1.4"
+                />
+              </svg>
+            </button>
+          )}
+        </div>
       </header>
 
-      <main>
-        <AnimatePresence mode="wait">
-          {screen === 'open' && (
-            <motion.div key="open" className="cyber-card" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
-              <CaseBox opening={false} />
-              <h1>Твой подарок за визит</h1>
+      {mode === 'panel' && isAdmin ? (
+        <AdminPanel telegramId={telegramUser.id} slug={activeBusiness.slug} role={activeRole!} botUsername={BOT_USERNAME} />
+      ) : (
+        <main>
+          <AnimatePresence mode="wait">
+            {screen === 'open' && (
+              <motion.div key="open" className="cyber-card" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+                <CaseBox opening={false} />
+                <h1>Твой подарок за визит</h1>
 
-              {alreadySpun ? (
-                <>
-                  <div className="status-pill">Попытка использована — приходи завтра</div>
-                  <button className="cta" disabled>
-                    Уже использовано
-                  </button>
-                  <button className="ghost" onClick={() => setScreen('result')}>
-                    Посмотреть мой подарок
-                  </button>
-                </>
-              ) : (
-                <>
-                  <div className="status-pill ready">Попытка на сегодня доступна</div>
-                  <button className="cta" onClick={openCase} disabled={!telegramUser}>
-                    Открыть кейс
-                  </button>
-                  {error && <div className="status-pill error">{error}</div>}
-                  {BOT_USERNAME && telegramUser && (
-                    <button className="ghost" onClick={() => shareReferral(telegramUser.id, business.slug)}>
-                      Пригласить друга (+1 попытка тебе)
+                {alreadySpun ? (
+                  <>
+                    <div className="status-pill">Попытка использована — приходи завтра</div>
+                    <button className="cta" disabled>
+                      Уже использовано
                     </button>
-                  )}
-                </>
-              )}
-            </motion.div>
-          )}
+                    <button className="ghost" onClick={() => setScreen('result')}>
+                      Посмотреть мой подарок
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <div className="status-pill ready">Попытка на сегодня доступна</div>
+                    <button className="cta" onClick={openCase}>
+                      Открыть кейс
+                    </button>
+                    {error && <div className="status-pill error">{error}</div>}
+                    {BOT_USERNAME && (
+                      <button className="ghost" onClick={() => shareReferral(telegramUser.id, activeBusiness.slug)}>
+                        Пригласить друга (+1 попытка тебе)
+                      </button>
+                    )}
+                  </>
+                )}
+              </motion.div>
+            )}
 
-          {screen === 'roll' && result && (
-            <motion.div key="roll" className="cyber-card" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <div className="reel-title">ОТКРЫВАЕМ КЕЙС…</div>
-              <Reel winner={{ name: result.gift_name!, rarity: result.rarity!, icon: result.icon! }} onDone={() => setScreen('result')} />
-            </motion.div>
-          )}
+            {screen === 'roll' && result && (
+              <motion.div key="roll" className="cyber-card" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                <div className="reel-title">ОТКРЫВАЕМ КЕЙС…</div>
+                <Reel winner={{ name: result.gift_name!, rarity: result.rarity!, icon: result.icon! }} onDone={() => setScreen('result')} />
+              </motion.div>
+            )}
 
-          {screen === 'result' && result && (
-            <RewardResult
-              key="result"
-              gift={result.gift_name!}
-              code={result.code!}
-              rarity={result.rarity!}
-              icon={result.icon!}
-              expiresAt={result.expires_at}
-              redeemed={result.redeemed}
-              onClose={() => setScreen('open')}
-            />
-          )}
-        </AnimatePresence>
-      </main>
+            {screen === 'result' && result && (
+              <RewardResult
+                key="result"
+                gift={result.gift_name!}
+                code={result.code!}
+                rarity={result.rarity!}
+                icon={result.icon!}
+                expiresAt={result.expires_at}
+                redeemed={result.redeemed}
+                onClose={() => setScreen('open')}
+              />
+            )}
+          </AnimatePresence>
+        </main>
+      )}
 
-      <footer>{business.name.toUpperCase()} · LOYALTY</footer>
+      <footer>{activeBusiness.name.toUpperCase()} · LOYALTY</footer>
     </div>
   )
 }

@@ -1,33 +1,33 @@
 // api/grant-attempt.js
-// POST /api/grant-attempt  { username, count, slug, password }
+// POST /api/grant-attempt  { username, count, slug, telegram_id }
+// Только owner и manager.
 
 import { createClient } from '@supabase/supabase-js'
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Метод не поддерживается' })
-  }
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Метод не поддерживается' })
 
-  const { username, count, slug, password } = req.body || {}
-  if (!slug || !password) return res.status(400).json({ error: 'Укажи бизнес и пароль' })
+  const { username, count, slug, telegram_id } = req.body || {}
+  const telegramId = Number(telegram_id)
+  if (!slug || !telegramId) return res.status(400).json({ error: 'Не хватает данных' })
 
   const cleanUsername = (username || '').trim().replace(/^@/, '')
   const grantCount = Math.max(1, Number(count) || 1)
   if (!cleanUsername) return res.status(400).json({ error: 'Укажи username гостя' })
 
   try {
-    const { data: business } = await supabase
-      .from('businesses')
-      .select('id, owner_password, manager_password')
-      .ilike('slug', slug)
-      .maybeSingle()
+    const { data: business } = await supabase.from('businesses').select('id').ilike('slug', slug).maybeSingle()
+    if (!business) return res.status(404).json({ error: 'Бизнес не найден' })
 
-    const validPasswords = [business?.owner_password, business?.manager_password].filter(Boolean)
-    if (!business || !validPasswords.includes(password)) {
-      return res.status(401).json({ error: 'Неверный пароль администратора' })
-    }
+    const { data: admin } = await supabase
+      .from('admins')
+      .select('role')
+      .eq('business_id', business.id)
+      .eq('telegram_id', telegramId)
+      .maybeSingle()
+    if (!admin || admin.role === 'staff') return res.status(403).json({ error: 'Только владелец или управляющий может выдавать попытки' })
 
     const { data: guest, error } = await supabase
       .from('users')
@@ -38,18 +38,11 @@ export default async function handler(req, res) {
 
     if (error) throw error
     if (!guest) {
-      return res.status(404).json({
-        error: `Гость с username @${cleanUsername} не найден среди тех, кто уже открывал ваш мини-апп.`,
-      })
+      return res.status(404).json({ error: `Гость @${cleanUsername} не найден среди тех, кто уже открывал мини-апп.` })
     }
 
     const newTotal = (guest.bonus_attempts || 0) + grantCount
-    const { error: updateError } = await supabase
-      .from('users')
-      .update({ bonus_attempts: newTotal })
-      .eq('telegram_id', guest.telegram_id)
-      .eq('business_id', business.id)
-    if (updateError) throw updateError
+    await supabase.from('users').update({ bonus_attempts: newTotal }).eq('telegram_id', guest.telegram_id).eq('business_id', business.id)
 
     return res.status(200).json({
       guest_name: guest.first_name || `@${guest.username}`,
