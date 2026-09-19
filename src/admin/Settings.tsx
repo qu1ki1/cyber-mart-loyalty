@@ -1,8 +1,37 @@
 import { motion } from "framer-motion";
-import WebApp from "@twa-dev/sdk";
+import { useState } from "react";
+
 
 
 export default function Settings(){
+
+
+
+const [adminId,setAdminId]=
+useState(
+localStorage.getItem("admin_id") || ""
+);
+
+
+
+function save(){
+
+
+localStorage.setItem(
+"admin_id",
+adminId
+);
+
+
+alert(
+"Настройки сохранены"
+);
+
+
+}
+
+
+
 
 
 return (
@@ -27,7 +56,9 @@ y:0
 
 
 <h1>
-⚙️ Настройки
+
+SETTINGS
+
 </h1>
 
 
@@ -36,49 +67,10 @@ style={{
 color:"var(--muted)"
 }}
 >
-Конфигурация Cyber Mart Mini App
+
+CYBER MART CONTROL
+
 </p>
-
-
-
-
-
-<div className="settings-grid">
-
-
-
-<div className="admin-card">
-
-
-<div className="setting-icon">
-🤖
-</div>
-
-
-<h2>
-Telegram Mini App
-</h2>
-
-
-
-<p>
-Статус подключения
-</p>
-
-
-
-<div className="status">
-
-<span></span>
-
-Подключено
-
-</div>
-
-
-</div>
-
-
 
 
 
@@ -87,115 +79,60 @@ Telegram Mini App
 <div className="admin-card">
 
 
-<div className="setting-icon">
-🗄️
-</div>
-
-
 <h2>
-Supabase
+
+ADMIN ACCESS
+
 </h2>
 
 
 
-<p>
-База данных
-</p>
+<p
 
+style={{
 
-
-<div className="status">
-
-<span></span>
-
-Работает
-
-</div>
-
-
-</div>
-
-
-
-
-
-
-
-<div className="admin-card">
-
-
-<div className="setting-icon">
-🚀
-</div>
-
-
-<h2>
-Версия
-
-</h2>
-
-
-<p>
-Текущая сборка приложения
-</p>
-
-
-
-<strong className="version">
-
-v1.0.0
-
-</strong>
-
-
-</div>
-
-
-
-
-
-
-
-
-<div className="admin-card">
-
-
-<div className="setting-icon">
-📱
-</div>
-
-
-<h2>
-Telegram данные
-</h2>
-
-
-
-<p>
-Проверка WebApp окружения
-</p>
-
-
-
-<button
-
-className="cyber-button"
-
-onClick={()=>{
-
-if(WebApp){
-
-WebApp.showAlert(
-"Telegram WebApp работает"
-);
-
-}
+color:"var(--muted)"
 
 }}
 
 >
 
-Проверить
+Telegram ID администратора
+
+</p>
+
+
+
+
+<input
+
+className="cyber-input"
+
+placeholder="Telegram ID"
+
+value={adminId}
+
+onChange={e=>
+
+setAdminId(
+e.target.value
+)
+
+}
+
+/>
+
+
+
+<button
+
+className="cta"
+
+onClick={save}
+
+>
+
+SAVE
 
 </button>
 
@@ -207,7 +144,79 @@ WebApp.showAlert(
 
 
 
+
+
+
+<div className="admin-card"
+
+
+style={{
+
+marginTop:20
+
+}}
+
+>
+
+
+<h2>
+
+SYSTEM
+
+</h2>
+
+
+
+
+<div className="setting-row">
+
+<span>
+Telegram WebApp
+</span>
+
+
+<strong>
+ONLINE
+</strong>
+
 </div>
+
+
+
+<div className="setting-row">
+
+<span>
+Database
+</span>
+
+
+<strong>
+CONNECTED
+</strong>
+
+</div>
+
+
+
+<div className="setting-row">
+
+<span>
+Version
+</span>
+
+
+<strong>
+1.0.0
+</strong>
+
+</div>
+
+
+
+</div>
+
+
+
 
 
 
@@ -215,59 +224,34 @@ WebApp.showAlert(
 
 <style>{`
 
-.settings-grid{
+.cyber-input{
 
 
-display:grid;
+width:100%;
 
 
-grid-template-columns:
-
-repeat(
-auto-fit,
-minmax(260px,1fr)
-);
+margin:15px 0;
 
 
-gap:20px;
+padding:15px;
 
 
-}
+border-radius:14px;
 
 
+border:
 
-
-
-.setting-icon{
-
-
-font-size:40px;
-
-
-margin-bottom:15px;
-
-
-}
+1px solid var(--line);
 
 
 
-.settings-grid h2{
+background:
 
-
-font-family:Rajdhani;
-
-
-font-size:25px;
-
-
-}
+rgba(0,0,0,.3);
 
 
 
-.settings-grid p{
-
-
-color:var(--muted);
+color:white;
 
 
 }
@@ -275,19 +259,30 @@ color:var(--muted);
 
 
 
-.status{
 
-
-margin-top:15px;
+.setting-row{
 
 
 display:flex;
 
 
-align-items:center;
+justify-content:space-between;
 
 
-gap:10px;
+padding:15px 0;
+
+
+border-bottom:
+
+1px solid var(--line-dim);
+
+
+}
+
+
+
+
+.setting-row strong{
 
 
 color:var(--neon);
@@ -297,64 +292,9 @@ color:var(--neon);
 
 
 
-.status span{
-
-
-width:10px;
-
-
-height:10px;
-
-
-background:var(--neon);
-
-
-border-radius:50%;
-
-
-box-shadow:
-
-0 0 15px var(--neon);
-
-
-}
-
-
-
-.version{
-
-
-font-family:Rajdhani;
-
-
-font-size:35px;
-
-
-color:var(--cyan);
-
-
-}
-
-
-
-
-
-@media(max-width:600px){
-
-
-.settings-grid{
-
-
-grid-template-columns:1fr;
-
-
-}
-
-
-}
-
-
 `}</style>
+
+
 
 
 

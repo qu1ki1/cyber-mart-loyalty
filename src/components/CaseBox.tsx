@@ -2,15 +2,20 @@ import { motion } from "framer-motion";
 
 
 export default function CaseBox({
-  opening
+
+opening
+
 }:{
-  opening:boolean
+
+opening:boolean
+
 }){
 
 
 return (
 
 <motion.div
+
 
 animate={
 
@@ -19,14 +24,19 @@ opening
 ?
 
 {
-rotate:[0,-8,8,-5,0],
+
+rotate:[0,-7,7,-4,0],
+
 scale:[1,1.08,1]
+
 }
 
 :
 
 {
+
 y:[0,-10,0]
+
 }
 
 }
@@ -37,131 +47,319 @@ transition={
 opening
 
 ?
+
 {
-duration:.7,
+
+duration:.8,
+
 repeat:Infinity
+
 }
 
 :
 
 {
+
 duration:4,
-repeat:Infinity
-}
+
+repeat:Infinity,
+
+ease:"easeInOut"
 
 }
 
-style={{
+}
 
-width:160,
-height:160,
-borderRadius:20,
 
-background:
-"linear-gradient(160deg,#15251b,#050807)",
 
-border:
-"1px solid rgba(57,255,138,.35)",
-
-display:"flex",
-
-alignItems:"center",
-
-justifyContent:"center",
-
-position:"relative",
-
-boxShadow:
-"0 0 50px rgba(57,255,138,.25)"
-
-}}
+className="case-thumb"
 
 >
 
 
+
+<div className="case-top"/>
+
+
+
+<div className="case-front">
+
+
+
 <svg
 
-width="70"
-
-height="70"
-
-viewBox="0 0 24 24"
+viewBox="0 0 100 100"
 
 fill="none"
 
 >
 
+
 <path
 
-d="M12 2L21 7V17L12 22L3 17V7L12 2Z"
+d="M20 35L50 18L80 35V70L50 86L20 70V35Z"
 
-stroke="#39ff8a"
+stroke="currentColor"
 
-strokeWidth="1.6"
+strokeWidth="3"
 
 />
 
 
+
 <path
 
-d="M12 2V22M3 7L12 12L21 7"
+d="M50 18V86"
 
-stroke="#39ff8a"
+stroke="currentColor"
 
-strokeWidth="1.6"
+strokeWidth="3"
 
 />
+
+
+
+<path
+
+d="M20 35L50 52L80 35"
+
+stroke="currentColor"
+
+strokeWidth="3"
+
+/>
+
+
+
+<rect
+
+x="42"
+
+y="42"
+
+width="16"
+
+height="18"
+
+rx="3"
+
+stroke="currentColor"
+
+strokeWidth="3"
+
+/>
+
 
 
 </svg>
 
 
 
+</div>
 
-<div
 
-style={{
 
-position:"absolute",
 
-inset:0,
 
-borderRadius:20,
+<div className="case-light"/>
 
-background:
 
-"linear-gradient(120deg,transparent,rgba(255,255,255,.15),transparent)",
 
-animation:"shine 3s infinite"
-
-}}
-
-/>
 
 
 <style>{`
 
-@keyframes shine{
+.case-thumb{
 
-0%{
 
-transform:translateX(-100%);
+position:relative;
+
+
+width:160px;
+
+
+height:160px;
+
+
+perspective:700px;
+
 
 }
 
-100%{
 
-transform:translateX(100%);
+
+
+
+.case-top{
+
+
+position:absolute;
+
+
+inset:0;
+
+
+border-radius:22px;
+
+
+background:
+
+
+linear-gradient(
+
+145deg,
+
+rgba(57,255,138,.25),
+
+transparent
+
+);
+
+
+
+filter:blur(20px);
+
 
 }
 
+
+
+
+
+.case-front{
+
+
+position:absolute;
+
+
+inset:0;
+
+
+display:flex;
+
+
+align-items:center;
+
+
+justify-content:center;
+
+
+
+background:
+
+
+linear-gradient(
+
+145deg,
+
+#17231c,
+
+#050807
+
+);
+
+
+
+border:
+
+1px solid rgba(57,255,138,.5);
+
+
+
+border-radius:22px;
+
+
+
+box-shadow:
+
+
+inset 0 0 40px rgba(57,255,138,.12),
+
+
+0 0 50px rgba(57,255,138,.25);
+
+
+
+overflow:hidden;
+
+
 }
+
+
+
+
+
+.case-front svg{
+
+
+width:85px;
+
+
+height:85px;
+
+
+color:var(--neon);
+
+
+filter:
+
+drop-shadow(
+
+0 0 15px var(--neon)
+
+);
+
+
+}
+
+
+
+
+
+.case-light{
+
+
+position:absolute;
+
+
+left:10%;
+
+
+right:10%;
+
+
+bottom:-10px;
+
+
+height:15px;
+
+
+background:
+
+var(--neon);
+
+
+
+filter:
+
+blur(18px);
+
+
+
+opacity:.7;
+
+
+}
+
+
+
+
 
 `}</style>
 
 
-</motion.div>
 
+</motion.div>
 
 )
 

@@ -7,76 +7,110 @@ import CaseBox from "./components/CaseBox";
 import Reel from "./components/Reel";
 import RewardResult from "./components/RewardResult";
 
+import "./App.css";
+
 
 
 type Gift = {
 
-id:number;
+  id:number;
 
-name:string;
+  name:string;
 
-chance:number;
+  chance:number;
 
-quantity:number;
+  quantity:number;
 
-active:boolean;
+  rarity?:
+  "common"
+  |
+  "rare"
+  |
+  "epic"
+  |
+  "legendary";
 
 };
 
 
 
+type Screen =
+"open"
+|
+"roll"
+|
+"result";
+
+
+
+
+
+
 function generateCode(){
 
-return (
+  return (
 
-"CM-" +
+    "CM-" +
 
-Math.floor(
-1000 + Math.random()*9000
-)
+    Math.floor(
+      1000 +
+      Math.random() * 9000
+    )
 
-);
-
-}
-
-
-
-function chooseGift(gifts:Gift[]){
-
-
-const total =
-gifts.reduce(
-(sum,g)=>sum+g.chance,
-0
-);
-
-
-
-let random =
-Math.random()*total;
-
-
-
-for(const gift of gifts){
-
-
-random -= gift.chance;
-
-
-if(random<=0){
-
-return gift;
-
-}
-
+  );
 
 }
 
 
 
-return gifts[0];
+
+
+
+
+function pickGift(gifts:Gift[]){
+
+
+  const total = gifts.reduce(
+
+    (sum,item)=>
+      sum + item.chance,
+
+    0
+
+  );
+
+
+
+  let random =
+  Math.random()*total;
+
+
+
+  for(const gift of gifts){
+
+
+    random -= gift.chance;
+
+
+
+    if(random <= 0){
+
+      return gift;
+
+    }
+
+
+  }
+
+
+
+  return gifts[0];
 
 }
+
+
+
+
 
 
 
@@ -86,28 +120,35 @@ export default function App(){
 
 
 
-const [user,setUser]=
-useState<any>(null);
+const [screen,setScreen]=
 
-
-
-const [opening,setOpening]=
-useState(false);
+useState<Screen>("open");
 
 
 
 const [gift,setGift]=
+
 useState<Gift|null>(null);
 
 
 
 const [code,setCode]=
+
 useState("");
 
 
 
-const lock =
+const [user,setUser]=
+
+useState<any>(null);
+
+
+
+const opening=
+
 useRef(false);
+
+
 
 
 
@@ -119,6 +160,7 @@ useEffect(()=>{
 
 const tg =
 window.Telegram?.WebApp;
+
 
 
 if(!tg)
@@ -161,12 +203,12 @@ tgUser.username
 
 });
 
-
 }
 
 
-
 },[]);
+
+
 
 
 
@@ -178,18 +220,17 @@ async function openCase(){
 
 
 
-if(lock.current)
+if(opening.current)
 return;
 
 
 
-lock.current=true;
+opening.current=true;
 
 
 
-setOpening(true);
+setScreen("roll");
 
-setGift(null);
 
 
 
@@ -205,9 +246,17 @@ await supabase
 
 .select("*")
 
-.eq("active",true)
+.eq(
+"active",
+true
+)
 
-.gt("quantity",0);
+.gt(
+"quantity",
+0
+);
+
+
 
 
 
@@ -217,13 +266,26 @@ throw error;
 
 
 if(!data || data.length===0)
-throw new Error();
+
+throw new Error(
+"No gifts"
+);
 
 
 
-const winner =
-chooseGift(data);
 
+
+const winner=
+
+pickGift(data);
+
+
+
+
+
+
+
+setTimeout(async()=>{
 
 
 
@@ -234,14 +296,20 @@ await supabase
 .update({
 
 quantity:
+
 winner.quantity-1
 
 })
 
 .eq(
+
 "id",
+
 winner.id
+
 );
+
+
 
 
 
@@ -253,12 +321,17 @@ await supabase
 .insert({
 
 telegram_id:
-user?.id,
+
+user?.id || null,
+
 
 gift_id:
+
 winner.id,
 
+
 gift_name:
+
 winner.name
 
 });
@@ -267,40 +340,66 @@ winner.name
 
 
 
-setTimeout(()=>{
-
 
 setGift(winner);
+
+
 
 setCode(
 generateCode()
 );
 
 
-setOpening(false);
+
+setScreen("result");
 
 
-},3000);
+
+
+
+window.Telegram?.WebApp
+
+?.HapticFeedback
+
+?.notificationOccurred(
+"success"
+);
+
+
+
+
+opening.current=false;
+
+
+
+},3500);
+
+
 
 
 
 }
 
-catch(e){
+catch(error){
 
-console.error(e);
 
-setOpening(false);
+console.log(error);
+
+
+
+setScreen("open");
+
+opening.current=false;
+
+
 
 }
 
 
 
-lock.current=false;
-
-
-
 }
+
+
 
 
 
@@ -313,59 +412,25 @@ return (
 <div className="app">
 
 
-<div className="cyber-bg"/>
 
-<div className="cyber-glow"/>
+<div className="bg-grid"/>
 
-
-
-
-<header
-
-style={{
-
-position:"relative",
-
-zIndex:2,
-
-textAlign:"center",
-
-padding:"35px 20px"
-
-}}
-
->
+<div className="bg-glow"/>
 
 
-<div
 
-style={{
 
-fontFamily:"Rajdhani",
 
-fontSize:34,
+<header>
 
-fontWeight:900,
 
-letterSpacing:6
-
-}}
-
->
+<div className="wordmark">
 
 CYBER
 
-<span
+<span>
 
-style={{
-
-color:"var(--neon)"
-
-}}
-
->
-
- MART
+MART
 
 </span>
 
@@ -374,22 +439,11 @@ color:"var(--neon)"
 
 
 
-<div
+<div className="biz-pill">
 
-style={{
-
-color:"var(--muted)",
-
-marginTop:10
-
-}}
-
->
-
-{user?.first_name || "PLAYER"}
+LOYALTY
 
 </div>
-
 
 
 </header>
@@ -399,30 +453,19 @@ marginTop:10
 
 
 
-
-<main
-
-style={{
-
-position:"relative",
-
-zIndex:2,
-
-padding:"0 20px"
-
-}}
-
->
-
+<main>
 
 
 <AnimatePresence mode="wait">
 
 
 
+
+
 {
 
-!gift &&
+screen==="open" &&
+
 
 <motion.div
 
@@ -446,40 +489,9 @@ y:0
 
 }}
 
->
+exit={{
 
-
-
-<h1
-
-style={{
-
-textAlign:"center",
-
-fontFamily:"Rajdhani",
-
-fontSize:32
-
-}}
-
->
-
-Твой подарок за визит
-
-</h1>
-
-
-
-
-<div
-
-style={{
-
-display:"flex",
-
-justifyContent:"center",
-
-margin:"35px 0"
+opacity:0
 
 }}
 
@@ -488,10 +500,29 @@ margin:"35px 0"
 
 <CaseBox
 
-opening={opening}
+opening={false}
 
 />
 
+
+
+
+
+<h1>
+
+Твой подарок
+
+за визит
+
+</h1>
+
+
+
+
+
+<div className="status-pill ready">
+
+AVAILABLE
 
 </div>
 
@@ -499,50 +530,17 @@ opening={opening}
 
 
 
-{
-
-opening &&
-
-<Reel/>
-
-}
-
-
-
 
 
 <button
 
-className="cyber-button"
-
-style={{
-
-width:"100%",
-
-marginTop:25
-
-}}
-
-disabled={opening}
+className="cta"
 
 onClick={openCase}
 
 >
 
-{
-
-opening
-
-?
-
-"ОТКРЫТИЕ..."
-
-:
-
-"ОТКРЫТЬ КЕЙС"
-
-}
-
+ОТКРЫТЬ КЕЙС
 
 </button>
 
@@ -550,37 +548,92 @@ opening
 
 </motion.div>
 
+
 }
+
+
+
+
+
 
 
 
 
 {
 
-gift &&
+screen==="roll" &&
 
 
 <motion.div
 
-key="result"
+key="roll"
+
+className="cyber-card"
 
 initial={{
 
-opacity:0,
-
-scale:.8
+opacity:0
 
 }}
 
 animate={{
 
-opacity:1,
-
-scale:1
+opacity:1
 
 }}
 
 >
+
+
+
+<h1>
+
+OPENING...
+
+</h1>
+
+
+
+
+
+<CaseBox
+
+opening={true}
+
+/>
+
+
+
+
+
+<Reel/>
+
+
+
+
+
+</motion.div>
+
+
+}
+
+
+
+
+
+
+
+
+
+{
+
+screen==="result"
+
+&&
+
+gift
+
+&&
 
 
 <RewardResult
@@ -589,11 +642,26 @@ gift={gift.name}
 
 code={code}
 
+rarity={
+
+gift.rarity || "rare"
+
+}
+
+onClose={()=>{
+
+
+setGift(null);
+
+setCode("");
+
+setScreen("open");
+
+
+}}
+
+
 />
-
-
-
-</motion.div>
 
 
 }
@@ -601,9 +669,7 @@ code={code}
 
 
 
-
 </AnimatePresence>
-
 
 
 </main>
@@ -611,27 +677,15 @@ code={code}
 
 
 
-<footer
 
-style={{
 
-position:"relative",
-
-zIndex:2,
-
-textAlign:"center",
-
-padding:30,
-
-color:"var(--muted)"
-
-}}
-
->
+<footer>
 
 CYBER MART LOYALTY
 
 </footer>
+
+
 
 
 

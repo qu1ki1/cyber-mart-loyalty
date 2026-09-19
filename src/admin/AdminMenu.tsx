@@ -1,14 +1,23 @@
 import {
-  LayoutDashboard,
-  Users,
-  Gift,
-  Trophy,
-  Settings
+
+LayoutDashboard,
+
+Users,
+
+Gift,
+
+Trophy,
+
+Settings
+
 } from "lucide-react";
 
 
 
+
+
 export default function AdminMenu(){
+
 
 
 const path =
@@ -16,41 +25,45 @@ window.location.pathname;
 
 
 
-const tabs=[
+
+
+const items=[
+
 
 {
 url:"/admin",
-title:"Главная",
-icon:<LayoutDashboard size={20}/>
+name:"HOME",
+icon:<LayoutDashboard/>
 },
 
 
 {
 url:"/admin/users",
-title:"Пользователи",
-icon:<Users size={20}/>
+name:"USERS",
+icon:<Users/>
 },
 
 
 {
 url:"/admin/gifts",
-title:"Призы",
-icon:<Gift size={20}/>
+name:"GIFTS",
+icon:<Gift/>
 },
 
 
 {
 url:"/admin/winners",
-title:"Победы",
-icon:<Trophy size={20}/>
+name:"WINS",
+icon:<Trophy/>
 },
 
 
 {
 url:"/admin/settings",
-title:"Настройки",
-icon:<Settings size={20}/>
+name:"SETTINGS",
+icon:<Settings/>
 }
+
 
 ];
 
@@ -58,15 +71,17 @@ icon:<Settings size={20}/>
 
 
 
+
 return (
 
-<header className="admin-menu">
+<div className="admin-header">
 
 
-<div className="admin-brand">
 
 
-<div className="brand-main">
+
+<div className="admin-logo">
+
 
 CYBER
 
@@ -74,17 +89,16 @@ CYBER
 MART
 </span>
 
-</div>
 
+<div>
 
-<div className="brand-sub">
-
-ADMIN PANEL
+ADMIN
 
 </div>
 
 
 </div>
+
 
 
 
@@ -94,18 +108,19 @@ ADMIN PANEL
 
 
 {
-tabs.map(tab=>(
+
+items.map(item=>(
 
 
 <a
 
-key={tab.url}
+key={item.url}
 
-href={tab.url}
+href={item.url}
 
 className={
 
-path===tab.url
+path===item.url
 
 ?
 
@@ -120,19 +135,15 @@ path===tab.url
 >
 
 
-<div className="tab-icon">
 
-{tab.icon}
-
-</div>
+{item.icon}
 
 
+<span>
 
-<div className="tab-title">
+{item.name}
 
-{tab.title}
-
-</div>
+</span>
 
 
 </a>
@@ -150,12 +161,11 @@ path===tab.url
 
 
 
+
+
 <style>{`
 
-.admin-menu{
-
-
-position:relative;
+.admin-header{
 
 
 display:flex;
@@ -167,23 +177,22 @@ align-items:center;
 justify-content:space-between;
 
 
-padding:16px 22px;
-
+padding:16px;
 
 
 background:
 
-rgba(10,12,12,.75);
+rgba(255,255,255,.03);
 
 
 
 border:
 
-1px solid var(--line-dim);
+1px solid var(--line);
 
 
 
-border-radius:24px;
+border-radius:20px;
 
 
 
@@ -193,34 +202,30 @@ blur(20px);
 
 
 
-margin-bottom:20px;
-
-
 }
 
 
 
-
-.brand-main{
+.admin-logo{
 
 
 font-family:Rajdhani;
 
 
-font-weight:900;
+font-size:25px;
 
 
-font-size:26px;
+font-weight:800;
 
 
-letter-spacing:5px;
+letter-spacing:.15em;
 
 
 }
 
 
 
-.brand-main span{
+.admin-logo span{
 
 
 color:var(--neon);
@@ -230,20 +235,22 @@ color:var(--neon);
 
 
 
+.admin-logo div{
 
-.brand-sub{
+
+font-family:Inter;
 
 
 font-size:10px;
 
 
-letter-spacing:4px;
+letter-spacing:.3em;
 
 
 color:var(--muted);
 
 
-margin-top:4px;
+margin-top:5px;
 
 
 }
@@ -251,7 +258,8 @@ margin-top:4px;
 
 
 
-.admin-menu nav{
+
+nav{
 
 
 display:flex;
@@ -264,14 +272,13 @@ gap:8px;
 
 
 
-
-.admin-menu a{
-
-
-width:72px;
+nav a{
 
 
-height:62px;
+width:80px;
+
+
+height:65px;
 
 
 
@@ -281,14 +288,18 @@ display:flex;
 flex-direction:column;
 
 
-justify-content:center;
-
-
 align-items:center;
 
 
+justify-content:center;
 
-text-decoration:none;
+
+
+gap:6px;
+
+
+
+border-radius:14px;
 
 
 
@@ -296,7 +307,7 @@ color:var(--muted);
 
 
 
-border-radius:16px;
+text-decoration:none;
 
 
 
@@ -313,11 +324,41 @@ transition:.25s;
 
 
 
+nav svg{
 
-.admin-menu a:hover{
+
+width:20px;
 
 
-transform:translateY(-3px);
+height:20px;
+
+
+}
+
+
+
+
+nav span{
+
+
+font-size:10px;
+
+
+letter-spacing:.1em;
+
+
+}
+
+
+
+
+
+nav a:hover{
+
+
+transform:
+
+translateY(-3px);
 
 
 color:white;
@@ -328,7 +369,7 @@ color:white;
 
 
 
-.admin-menu a.active{
+nav a.active{
 
 
 color:var(--neon);
@@ -343,31 +384,14 @@ rgba(57,255,138,.08);
 
 border-color:
 
-rgba(57,255,138,.35);
+var(--line);
 
 
 
 box-shadow:
 
-0 0 30px rgba(57,255,138,.2);
 
-
-
-}
-
-
-
-
-.tab-title{
-
-
-font-size:10px;
-
-
-margin-top:5px;
-
-
-text-align:center;
+0 0 25px rgba(57,255,138,.25);
 
 
 }
@@ -379,8 +403,7 @@ text-align:center;
 @media(max-width:700px){
 
 
-
-.admin-menu{
+.admin-header{
 
 
 flex-direction:column;
@@ -389,42 +412,27 @@ flex-direction:column;
 gap:15px;
 
 
-padding:15px 10px;
-
-
 }
 
 
 
-
-.brand-main{
-
-
-font-size:22px;
-
-
-}
-
-
-
-
-.admin-menu nav{
+nav{
 
 
 width:100%;
 
 
-justify-content:space-around;
+justify-content:space-between;
 
 
 }
 
 
 
-.admin-menu a{
+nav a{
 
 
-width:58px;
+width:55px;
 
 
 height:55px;
@@ -434,10 +442,10 @@ height:55px;
 
 
 
-.tab-title{
+nav span{
 
 
-font-size:9px;
+display:none;
 
 
 }
@@ -452,7 +460,10 @@ font-size:9px;
 
 
 
-</header>
+
+
+</div>
+
 
 )
 
