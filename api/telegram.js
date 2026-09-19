@@ -1,30 +1,26 @@
 // api/telegram.js
 //
-// Бот теперь делает только одно: открывает мини-апп. Вся остальная логика
-// (игра, касса, призы, бренд, статистика) — внутри самого приложения,
-// определяется автоматически по тому, кто ты в Telegram.
-//
-// /start <slug>                — гость переходит по ссылке своего заведения
-// /start <slug>-ref-<id>       — гость пришёл по реферальной ссылке
-// /start join-<код>            — сотрудник/управляющий переходит по
-//                                 приглашению от владельца (выдано внутри
-//                                 приложения, владелец просто прислал ссылку)
+// Бот делает только одно: показывает ОДНУ кнопку "Открыть LOYALTY".
+// Вся остальная логика — игра, касса, призы, бренд, статистика —
+// внутри самого приложения, определяется автоматически по тому,
+// кто ты в Telegram. Никакого текста про QR-коды тут нет и не будет —
+// QR просто физически ведёт на этого бота, только и всего.
 
 import { createClient } from '@supabase/supabase-js'
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
 const APP_URL = process.env.APP_URL || 'https://cyber-mart-loyalty.vercel.app'
 
-async function send(chatId, text, extra = {}) {
+async function send(chatId, text, url) {
   await fetch(`https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendMessage`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ chat_id: chatId, text, ...extra }),
+    body: JSON.stringify({
+      chat_id: chatId,
+      text,
+      reply_markup: { inline_keyboard: [[{ text: 'Открыть LOYALTY', web_app: { url } }]] },
+    }),
   })
-}
-
-function openAppButton(url) {
-  return { reply_markup: { inline_keyboard: [[{ text: '🎁 Открыть приложение', web_app: { url } }]] } }
 }
 
 export default async function handler(req, res) {
@@ -37,8 +33,7 @@ export default async function handler(req, res) {
     const text = (body.message.text || '').trim()
 
     if (!text.startsWith('/start')) {
-      // Бот больше не понимает команд в чате — всё внутри приложения.
-      await send(chatId, 'Всё управление — внутри приложения 👇', openAppButton(APP_URL))
+      await send(chatId, 'LOYALTY', APP_URL)
       return res.status(200).json({ ok: true })
     }
 
@@ -46,7 +41,7 @@ export default async function handler(req, res) {
     const payload = parts.length > 1 ? parts[1].trim() : ''
 
     if (!payload) {
-      await send(chatId, '👋 Добро пожаловать в LOYALTY!', openAppButton(APP_URL))
+      await send(chatId, 'LOYALTY', APP_URL)
       return res.status(200).json({ ok: true })
     }
 
@@ -57,11 +52,11 @@ export default async function handler(req, res) {
       const { data: invite } = await supabase.from('invites').select('*, businesses(name, slug)').eq('code', code).maybeSingle()
 
       if (!invite) {
-        await send(chatId, 'Ссылка-приглашение не найдена или устарела.')
+        await send(chatId, 'Приглашение не найдено или устарело.', APP_URL)
         return res.status(200).json({ ok: true })
       }
       if (invite.used_by) {
-        await send(chatId, 'Эта ссылка уже была использована.')
+        await send(chatId, 'Эта ссылка уже была использована.', APP_URL)
         return res.status(200).json({ ok: true })
       }
 
@@ -71,19 +66,18 @@ export default async function handler(req, res) {
       )
       await supabase.from('invites').update({ used_by: telegramId, used_at: new Date().toISOString() }).eq('id', invite.id)
 
-      const roleLabel = invite.role === 'manager' ? 'управляющий' : 'персонал'
       const appUrl = `${APP_URL}/?biz=${encodeURIComponent(invite.businesses.slug)}`
-      await send(chatId, `✅ Готово! Ты теперь ${roleLabel} в «${invite.businesses.name}». Открой приложение 👇`, openAppButton(appUrl))
+      await send(chatId, `Готово! Ты добавлен в «${invite.businesses.name}».`, appUrl)
       return res.status(200).json({ ok: true })
     }
 
-    // ---------- обычный клиентский вход (по ссылке / реферал) ----------
+    // ---------- обычный вход (клиент по ссылке / реферал) ----------
     const refMatch = payload.match(/^(.+)-ref-(\d+)$/)
     const slug = refMatch ? refMatch[1] : payload
     const ref = refMatch ? refMatch[2] : ''
     const appUrl = `${APP_URL}/?biz=${encodeURIComponent(slug)}${ref ? `&ref=${encodeURIComponent(ref)}` : ''}`
 
-    await send(chatId, '🎮 LOYALTY\n\nТвой подарок за визит 👇', openAppButton(appUrl))
+    await send(chatId, 'LOYALTY', appUrl)
     return res.status(200).json({ ok: true })
   } catch (e) {
     console.log(e)
