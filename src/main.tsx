@@ -1,47 +1,21 @@
-import { StrictMode } from "react";
-import { createRoot } from "react-dom/client";
+import { StrictMode } from 'react'
+import { createRoot } from 'react-dom/client'
 
-import "./index.css";
-import "./styles/cyber.css";
+import './index.css'
+import App from './App'
+import Admin from './Admin'
+import AdminGate from './admin/AdminGate'
 
-import App from "./App";
-import Admin from "./Admin";
+const path = window.location.pathname
 
-import WebApp from "@twa-dev/sdk";
-
-
-// Telegram Mini App
-
-if (WebApp && typeof WebApp.ready === "function") {
-  WebApp.ready();
-}
-
-
-if (WebApp && typeof WebApp.expand === "function") {
-  WebApp.expand();
-}
-
-
-// Роутинг
-
-const path = window.location.pathname;
-
-
-
-createRoot(
-  document.getElementById("root")!
-).render(
-
+createRoot(document.getElementById('root')!).render(
   <StrictMode>
-
-    {
-      path.startsWith("/admin")
-        ?
+    {path.startsWith('/admin') ? (
+      <AdminGate>
         <Admin />
-        :
-        <App />
-    }
-
-  </StrictMode>
-
-);
+      </AdminGate>
+    ) : (
+      <App />
+    )}
+  </StrictMode>,
+)
