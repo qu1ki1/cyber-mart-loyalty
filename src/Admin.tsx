@@ -1,5 +1,3 @@
-import { useState } from "react";
-
 import AdminMenu from "./admin/AdminMenu";
 import Dashboard from "./admin/Dashboard";
 import Users from "./admin/Users";
@@ -8,90 +6,84 @@ import Winners from "./admin/Winners";
 import Settings from "./admin/Settings";
 
 
-export default function Admin() {
-
-  const path = window.location.pathname;
-
-  const [menuOpen,setMenuOpen] = useState(false);
+export default function Admin(){
 
 
-  let content = <Dashboard />;
-
-
-  if(path === "/admin/users")
-    content = <Users />;
-
-
-  if(path === "/admin/gifts")
-    content = <Gifts />;
-
-
-  if(path === "/admin/winners")
-    content = <Winners />;
-
-
-  if(path === "/admin/settings")
-    content = <Settings />;
+const path = window.location.pathname;
 
 
 
-  return (
-
-    <div
-      style={{
-        display:"flex",
-        minHeight:"100vh",
-        background:"var(--bg)",
-        color:"var(--ink)",
-        position:"relative"
-      }}
-    >
+let content=<Dashboard/>;
 
 
-      <AdminMenu
-        open={menuOpen}
-        close={()=>setMenuOpen(false)}
-      />
+if(path==="/admin/users")
+content=<Users/>;
+
+
+if(path==="/admin/gifts")
+content=<Gifts/>;
+
+
+if(path==="/admin/winners")
+content=<Winners/>;
+
+
+if(path==="/admin/settings")
+content=<Settings/>;
 
 
 
-      <main
-        style={{
-          flex:1,
-          overflow:"auto",
-          width:"100%"
-        }}
-      >
+return (
+
+<div className="admin">
 
 
-        <button
-          onClick={()=>setMenuOpen(true)}
-          style={{
-            display:"none",
-            position:"fixed",
-            top:15,
-            left:15,
-            zIndex:1000,
-            background:"var(--neon)",
-            border:0,
-            borderRadius:10,
-            padding:"10px 14px",
-            fontSize:20
-          }}
-          className="mobile-menu-btn"
-        >
-          ☰
-        </button>
+<AdminMenu/>
 
 
-        {content}
+<section className="content">
+
+{content}
+
+</section>
 
 
-      </main>
+
+<style>{`
+
+.admin{
+
+min-height:100dvh;
+
+background:#050505;
+
+color:white;
+
+display:flex;
+
+flex-direction:column;
+
+}
 
 
-    </div>
 
-  );
+.content{
+
+flex:1;
+
+padding:20px;
+
+overflow:auto;
+
+}
+
+
+
+`}</style>
+
+
+</div>
+
+)
 
 }
