@@ -20,6 +20,7 @@ useState(true);
 
 
 
+
 useEffect(()=>{
 
 
@@ -35,49 +36,41 @@ getUsers()
 
 
 
-const totalUsers =
-users.length;
 
+const stats=[
 
-const totalGifts =
-users.filter(
-u=>u.gift
-).length;
-
-
-
-const totalAttempts =
-users.reduce(
-(sum,u)=>
-sum+(u.attempts||0),
-0
-);
-
-
-
-
-const cards=[
 
 {
-title:"Пользователей",
-value:totalUsers,
+title:"Пользователи",
+value:users.length,
 icon:"👥",
 color:"var(--neon)"
 },
 
+
 {
 title:"Выдано подарков",
-value:totalGifts,
+value:
+users.filter(
+u=>u.gift
+).length,
 icon:"🎁",
 color:"var(--cyan)"
 },
 
+
 {
-title:"Всего попыток",
-value:totalAttempts,
+title:"Попытки",
+value:
+users.reduce(
+(sum,u)=>
+sum+(u.attempts||0),
+0
+),
 icon:"🎯",
-color:"#ffb84d"
+color:"#ffd166"
 }
+
 
 ];
 
@@ -85,9 +78,10 @@ color:"#ffb84d"
 
 
 
+
 return (
 
-<div className="dashboard">
+<div className="admin-page">
 
 
 
@@ -106,18 +100,26 @@ y:0
 >
 
 
-<h1 className="title">
+
+<h1>
 
 📊 Дашборд
 
 </h1>
 
 
-<p className="subtitle">
 
-Статистика CYBER MART Loyalty
+<p
+style={{
+color:"var(--muted)"
+}}
+>
+
+CYBER MART статистика
 
 </p>
+
+
 
 
 
@@ -126,7 +128,7 @@ loading
 
 ?
 
-<div className="loading">
+<div className="admin-card">
 
 Загрузка...
 
@@ -135,24 +137,25 @@ loading
 
 :
 
-<div className="stats">
+
+<div className="stats-grid">
 
 
 {
-cards.map((card,index)=>(
+stats.map(
+(stat,index)=>(
 
 
 <motion.div
 
-key={card.title}
+key={stat.title}
 
-
-className="stat-card"
+className="admin-card"
 
 
 initial={{
 opacity:0,
-scale:.9
+scale:.8
 }}
 
 
@@ -163,40 +166,53 @@ scale:1
 
 
 transition={{
-delay:index*.08
+delay:index*.1
 }}
-
 
 >
 
 
-<div className="icon">
+<div
+style={{
+fontSize:40
+}}
+>
 
-{card.icon}
-
-</div>
-
-
-
-<div className="label">
-
-{card.title}
+{stat.icon}
 
 </div>
+
+
+
+<p
+style={{
+color:"var(--muted)"
+}}
+>
+
+{stat.title}
+
+</p>
 
 
 
 <div
 
-className="value"
-
 style={{
-color:card.color
+
+fontFamily:"Rajdhani",
+
+fontSize:45,
+
+fontWeight:800,
+
+color:stat.color
+
 }}
 
 >
 
-{card.value}
+{stat.value}
 
 </div>
 
@@ -209,6 +225,7 @@ color:card.color
 }
 
 
+
 </div>
 
 
@@ -216,51 +233,25 @@ color:card.color
 
 
 
-</motion.div>
-
-
-
-
-
 <style>{`
 
-.dashboard{
-
-width:100%;
-
-}
-
-
-
-.title{
+.admin-page h1{
 
 
 font-family:Rajdhani;
 
-font-size:32px;
 
-margin:0 0 6px;
+font-size:34px;
+
+
+margin-bottom:5px;
 
 
 }
 
 
 
-.subtitle{
-
-color:var(--muted);
-
-margin-bottom:30px;
-
-font-size:14px;
-
-}
-
-
-
-
-
-.stats{
+.stats-grid{
 
 
 display:grid;
@@ -270,49 +261,44 @@ grid-template-columns:
 
 repeat(
 auto-fit,
-minmax(220px,1fr)
+minmax(240px,1fr)
 );
 
 
-gap:18px;
+gap:20px;
 
 
 }
 
 
 
-
-
-.stat-card{
+.admin-card{
 
 
 background:
 
-rgba(255,255,255,.035);
+rgba(255,255,255,.04);
+
 
 
 border:
 
-1px solid var(--line-dim);
+1px solid rgba(57,255,138,.15);
 
 
-border-radius:20px;
+
+border-radius:22px;
 
 
-padding:24px;
+
+padding:25px;
 
 
 
 backdrop-filter:
 
-blur(16px);
+blur(20px);
 
-
-
-box-shadow:
-
-
-0 0 40px rgba(57,255,138,.06);
 
 
 transition:.25s;
@@ -322,100 +308,43 @@ transition:.25s;
 
 
 
-.stat-card:hover{
+.admin-card:hover{
 
 
 transform:
 
-translateY(-4px);
+translateY(-5px);
 
 
-border-color:
+box-shadow:
 
-var(--line);
-
-
-}
-
-
-
-
-.icon{
-
-font-size:32px;
-
-margin-bottom:18px;
-
-}
-
-
-
-.label{
-
-font-size:13px;
-
-color:var(--muted);
-
-margin-bottom:8px;
-
-}
-
-
-
-.value{
-
-
-font-family:Rajdhani;
-
-
-font-size:42px;
-
-
-font-weight:800;
+0 0 40px rgba(57,255,138,.15);
 
 
 }
-
-
 
 
 
 @media(max-width:600px){
 
 
-.title{
-
-font-size:26px;
-
-}
+.stats-grid{
 
 
-.stats{
-
-
-grid-template-columns:
-
-1fr;
+grid-template-columns:1fr;
 
 
 }
 
 
-
-.stat-card{
-
-padding:20px;
-
 }
-
-
-
-}
-
 
 
 `}</style>
 
+
+
+</motion.div>
 
 
 </div>

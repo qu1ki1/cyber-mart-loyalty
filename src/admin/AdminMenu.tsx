@@ -1,40 +1,41 @@
 export default function AdminMenu(){
 
 
-const path = window.location.pathname;
+const path =
+window.location.pathname;
 
 
 
-const items = [
+const tabs=[
 
 {
 url:"/admin",
 icon:"📊",
-title:"Главная"
+name:"Главная"
 },
 
 {
 url:"/admin/users",
 icon:"👥",
-title:"Люди"
+name:"Люди"
 },
 
 {
 url:"/admin/gifts",
 icon:"🎁",
-title:"Призы"
+name:"Призы"
 },
 
 {
 url:"/admin/winners",
 icon:"🏆",
-title:"Победы"
+name:"Победы"
 },
 
 {
 url:"/admin/settings",
 icon:"⚙️",
-title:"Настройки"
+name:"Настройки"
 }
 
 ];
@@ -42,21 +43,32 @@ title:"Настройки"
 
 
 
-
 return (
 
-<header className="admin-top">
+<header
+
+className="admin-top"
+
+>
 
 
-<div className="admin-brand">
+<div className="admin-logo">
 
-CYBER <span>MART</span>
+
+CYBER
+
+<span>
+MART
+</span>
+
 
 <small>
-ADMIN PANEL
+ADMIN
 </small>
 
+
 </div>
+
 
 
 
@@ -65,17 +77,17 @@ ADMIN PANEL
 
 
 {
-items.map(item=>(
+tabs.map(tab=>(
 
 
 <a
 
-key={item.url}
+key={tab.url}
 
-href={item.url}
+href={tab.url}
 
 className={
-path===item.url
+path===tab.url
 ?
 "active"
 :
@@ -85,16 +97,16 @@ path===item.url
 >
 
 
-<div className="icon">
+<div className="tab-icon">
 
-{item.icon}
+{tab.icon}
 
 </div>
 
 
-<div className="label">
+<div className="tab-name">
 
-{item.title}
+{tab.name}
 
 </div>
 
@@ -103,14 +115,10 @@ path===item.url
 
 
 ))
-
 }
 
 
-
 </nav>
-
-
 
 
 
@@ -119,23 +127,14 @@ path===item.url
 .admin-top{
 
 
-position:relative;
-
-z-index:10;
-
-
 display:flex;
 
-
 align-items:center;
-
 
 justify-content:space-between;
 
 
-
-padding:14px 20px;
-
+padding:15px 20px;
 
 
 background:
@@ -143,30 +142,33 @@ background:
 rgba(255,255,255,.035);
 
 
-
-border-bottom:
+border:
 
 1px solid var(--line-dim);
 
 
+border-radius:22px;
+
 
 backdrop-filter:
 
-blur(18px);
+blur(20px);
 
+
+margin-bottom:20px;
 
 
 }
 
 
 
-.admin-brand{
+.admin-logo{
 
 
-font-family:Rajdhani,sans-serif;
+font-family:Rajdhani;
 
 
-font-size:22px;
+font-size:24px;
 
 
 font-weight:800;
@@ -175,12 +177,11 @@ font-weight:800;
 letter-spacing:.12em;
 
 
-
 }
 
 
 
-.admin-brand span{
+.admin-logo span{
 
 
 color:var(--neon);
@@ -190,25 +191,22 @@ color:var(--neon);
 
 
 
-.admin-brand small{
+.admin-logo small{
 
 
 display:block;
 
 
-font-family:Inter,sans-serif;
+font-family:Inter;
 
 
 font-size:10px;
 
 
-letter-spacing:.3em;
+letter-spacing:.4em;
 
 
 color:var(--muted);
-
-
-margin-top:3px;
 
 
 }
@@ -229,15 +227,13 @@ gap:8px;
 
 
 
-
-.admin-top nav a{
-
-
-width:62px;
+.admin-top a{
 
 
-height:58px;
+width:65px;
 
+
+height:60px;
 
 
 display:flex;
@@ -246,23 +242,22 @@ display:flex;
 flex-direction:column;
 
 
-align-items:center;
-
-
 justify-content:center;
 
 
-
-border-radius:16px;
-
+align-items:center;
 
 
 text-decoration:none;
 
 
+border-radius:16px;
+
 
 color:var(--muted);
 
+
+transition:.25s;
 
 
 border:
@@ -270,75 +265,39 @@ border:
 1px solid transparent;
 
 
+}
 
-transition:.25s;
 
+
+.admin-top a:hover{
+
+
+transform:translateY(-3px);
 
 
 }
 
 
 
-.admin-top nav a:hover{
+.admin-top a.active{
 
 
-transform:translateY(-2px);
-
-
-}
-
-
-
-
-.admin-top nav a.active{
-
-
-color:var(--neon);
-
+color:var(--cyan);
 
 
 background:
 
-rgba(57,255,138,.08);
-
+rgba(57,217,255,.08);
 
 
 border-color:
 
-var(--line);
-
+rgba(57,217,255,.35);
 
 
 box-shadow:
 
-0 0 25px rgba(57,255,138,.18);
-
-
-
-}
-
-
-
-.icon{
-
-
-font-size:22px;
-
-
-line-height:22px;
-
-
-}
-
-
-
-.label{
-
-
-font-size:10px;
-
-
-margin-top:5px;
+0 0 25px rgba(57,217,255,.18);
 
 
 }
@@ -346,9 +305,26 @@ margin-top:5px;
 
 
 
+.tab-icon{
 
-@media(max-width:600px){
+font-size:23px;
 
+}
+
+
+
+.tab-name{
+
+font-size:9px;
+
+margin-top:4px;
+
+}
+
+
+
+
+@media(max-width:700px){
 
 
 .admin-top{
@@ -357,25 +333,19 @@ margin-top:5px;
 flex-direction:column;
 
 
-gap:12px;
-
-
-padding:12px 10px;
+gap:15px;
 
 
 }
 
 
+.admin-logo{
 
 
-.admin-brand{
-
-
-font-size:18px;
+font-size:20px;
 
 
 }
-
 
 
 .admin-top nav{
@@ -387,17 +357,14 @@ width:100%;
 justify-content:space-around;
 
 
-gap:3px;
-
-
 }
 
 
 
-.admin-top nav a{
+.admin-top a{
 
 
-width:54px;
+width:55px;
 
 
 height:50px;
@@ -406,24 +373,10 @@ height:50px;
 }
 
 
-
-.label{
-
-
-font-size:9px;
-
-
 }
-
-
-
-}
-
-
 
 
 `}</style>
-
 
 
 </header>

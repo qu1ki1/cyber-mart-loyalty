@@ -1,145 +1,48 @@
-import { supabase } from "./supabase";
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import Admin from "./Admin";
-import "./App.css";
+
+import { supabase } from "./supabase";
+
+import "./styles/cyber.css";
 
 
-type IconKey =
-  | "clock"
-  | "clockBig"
-  | "cup"
-  | "percent"
-  | "star";
 
+type Gift = {
 
-type Reward = {
-  id:string;
-  name:string;
-  weight:number;
-  icon:IconKey;
-  prefix:string;
+id:number;
+
+name:string;
+
+chance:number;
+
+quantity:number;
+
+active:boolean;
+
 };
-
-
-
-const REWARDS:Reward[] = [
-
-{
-id:"r30",
-name:"+30 минут игры",
-weight:40,
-icon:"clock",
-prefix:"CM30"
-},
-
-{
-id:"r60",
-name:"+1 час игры",
-weight:20,
-icon:"clockBig",
-prefix:"CM60"
-},
-
-{
-id:"drink",
-name:"Бесплатный напиток",
-weight:20,
-icon:"cup",
-prefix:"CMDR"
-},
-
-{
-id:"discount",
-name:"Скидка 10%",
-weight:15,
-icon:"percent",
-prefix:"CMDS"
-},
-
-{
-id:"jackpot",
-name:"Джекпот: 3 часа игры",
-weight:5,
-icon:"star",
-prefix:"CMJP"
-}
-
-];
-
-
-
-function pickReward(){
-
-const total =
-REWARDS.reduce(
-(sum,r)=>sum+r.weight,
-0
-);
-
-
-let random =
-Math.random()*total;
-
-
-for(const r of REWARDS){
-
-if(random < r.weight)
-return r;
-
-
-random-=r.weight;
-
-}
-
-
-return REWARDS[0];
-
-}
-
-
-
-function genCode(prefix:string){
-
-return `${prefix}-${Math.floor(
-1000+Math.random()*9000
-)}`;
-
-}
 
 
 
 export default function App(){
 
 
-
-const path =
-window.location.pathname;
-
+const [user,setUser] =
+useState<any>(null);
 
 
-const [screen,setScreen] =
-useState<"idle"|"result">("idle");
 
-
-const [result,setResult] =
-useState<Reward|null>(null);
-
-
-const [code,setCode] =
-useState("");
-
-
-const [loading,setLoading] =
+const [loading,setLoading]=
 useState(false);
 
 
-const [telegramId,setTelegramId] =
-useState<number|null>(null);
+
+const [opening,setOpening]=
+useState(false);
 
 
-const [firstName,setFirstName] =
-useState("");
+
+const [result,setResult]=
+useState<Gift|null>(null);
 
 
 
@@ -148,11 +51,14 @@ useRef(false);
 
 
 
+
+
 useEffect(()=>{
 
 
 const tg =
 window.Telegram?.WebApp;
+
 
 
 if(!tg)
@@ -166,17 +72,15 @@ tg.expand();
 
 
 
-const user =
+const telegramUser =
 tg.initDataUnsafe?.user;
 
 
 
-if(user){
+if(telegramUser){
 
 
-setTelegramId(user.id);
-
-setFirstName(user.first_name);
+setUser(telegramUser);
 
 
 
@@ -184,18 +88,28 @@ supabase
 .from("users")
 .upsert({
 
-telegram_id:user.id,
+telegram_id:
+telegramUser.id,
 
-first_name:user.first_name,
 
-username:user.username ?? null
+first_name:
+telegramUser.first_name,
+
+
+username:
+telegramUser.username
+
 
 });
+
 
 }
 
 
+
 },[]);
+
+
 
 
 
@@ -209,36 +123,102 @@ return;
 
 
 
-if(!telegramId){
-
-alert(
-"Откройте приложение через Telegram"
-);
-
-return;
-
-}
-
-
-
 busy.current=true;
 
+
+
 setLoading(true);
+
+setOpening(true);
+
+setResult(null);
 
 
 
 try{
 
 
-const reward =
-pickReward();
+const {data:gifts,error}=
+
+await supabase
+.from("gifts")
+.select("*")
+.eq("active",true)
+.gt("quantity",0);
 
 
 
-const giftCode =
-genCode(
-reward.prefix
+if(error)
+throw error;
+
+
+
+if(!gifts || gifts.length===0)
+throw new Error("Нет подарков");
+
+
+
+
+const total =
+gifts.reduce(
+
+(sum,g)=>
+sum+g.chance,
+
+0
+
 );
+
+
+
+
+let random =
+Math.random()*total;
+
+
+
+let winner =
+gifts[0];
+
+
+
+for(const gift of gifts){
+
+
+random -= gift.chance;
+
+
+
+if(random<=0){
+
+winner=gift;
+
+break;
+
+}
+
+
+}
+
+
+
+
+
+await supabase
+.from("gifts")
+.update({
+
+quantity:
+winner.quantity-1
+
+})
+
+.eq(
+"id",
+winner.id
+);
+
+
 
 
 
@@ -246,36 +226,51 @@ await supabase
 .from("winners")
 .insert({
 
-telegram_id:telegramId,
+telegram_id:
+user?.id,
 
-gift_id:reward.id,
 
-gift_name:reward.name,
+gift_id:
+winner.id,
 
-code:giftCode
+
+gift_name:
+winner.name
+
 
 });
 
 
 
-setResult(reward);
 
-setCode(giftCode);
 
-setScreen("result");
+setTimeout(()=>{
+
+
+setResult(winner);
+
+
+setOpening(false);
+
+
+},1800);
 
 
 
 }
+
+
 catch(e){
 
 console.error(e);
 
-alert(
-"Ошибка открытия кейса"
-);
+setOpening(false);
+
+alert("Ошибка открытия");
+
 
 }
+
 
 finally{
 
@@ -286,19 +281,9 @@ busy.current=false;
 }
 
 
-
 }
 
 
-
-
-// АДМИНКА
-
-if(path.startsWith("/admin")){
-
-return <Admin/>;
-
-}
 
 
 
@@ -309,20 +294,48 @@ return (
 <div className="app">
 
 
-<header>
+<div className="cyber-bg"/>
 
-<div className="wordmark">
+<div className="cyber-glow"/>
 
-CYBER<span>MART</span>
+
+
+<header
+style={{
+position:"relative",
+zIndex:2,
+padding:"25px",
+textAlign:"center"
+}}
+>
+
+
+<div
+className="logo"
+>
+
+CYBER
+<span
+style={{
+color:"var(--neon)"
+}}
+>
+ MART
+</span>
 
 </div>
 
 
-<div>
 
-{firstName}
+<p
+style={{
+color:"var(--muted)"
+}}
+>
 
-</div>
+Привет, {user?.first_name || "Игрок"}
+
+</p>
 
 
 </header>
@@ -330,45 +343,110 @@ CYBER<span>MART</span>
 
 
 
-<main>
+
+<main
+style={{
+position:"relative",
+zIndex:2,
+padding:20
+}}
+>
+
 
 
 <AnimatePresence mode="wait">
 
 
 {
-screen==="idle" &&
 
-<motion.section
-initial={{opacity:0}}
-animate={{opacity:1}}
+!result &&
+
+<motion.div
+
+key="case"
+
+className="cyber-card"
+
+initial={{
+opacity:0,
+y:30
+}}
+
+animate={{
+opacity:1,
+y:0
+}}
+
 >
 
 
-<h1>
 
-Твой подарок за визит
+<h1
+style={{
+textAlign:"center"
+}}
+>
+
+🎁 Твой подарок за визит
 
 </h1>
 
 
 
-<button
 
-className="cta"
+<motion.div
 
-onClick={openCase}
+className={
+opening
+?
+"shake"
+:
+"float"
+}
 
-disabled={loading}
+style={{
+
+height:220,
+
+display:"flex",
+
+alignItems:"center",
+
+justifyContent:"center",
+
+fontSize:100
+
+}}
 
 >
 
-{
+🎁
 
-loading
+</motion.div>
+
+
+
+
+<button
+
+className="cyber-button"
+
+disabled={loading}
+
+onClick={openCase}
+
+>
+
+
+{
+opening
+
 ?
+
 "Открываем..."
+
 :
+
 "Открыть кейс"
 
 }
@@ -377,18 +455,27 @@ loading
 </button>
 
 
-</motion.section>
+
+</motion.div>
+
 
 }
 
 
 
 
+
+
 {
-screen==="result" && result &&
+
+result &&
 
 
-<motion.section
+<motion.div
+
+key="result"
+
+className="cyber-card"
 
 initial={{
 scale:.8,
@@ -403,44 +490,73 @@ opacity:1
 >
 
 
-<h1>
+<h1
+style={{
+textAlign:"center",
+color:"var(--neon)"
+}}
+>
 
-🎁 {result.name}
+🎉 Победа!
 
 </h1>
 
 
-<p>
 
-Твой код:
+<div
+style={{
+textAlign:"center",
+fontSize:30
+}}
+>
 
-<br/>
+🎁
 
-<b>
+</div>
 
-{code}
 
-</b>
+
+<h2
+style={{
+textAlign:"center"
+}}
+>
+
+{result.name}
+
+</h2>
+
+
+
+<p
+style={{
+textAlign:"center",
+color:"var(--muted)"
+}}
+>
+
+Покажите этот экран администратору
 
 </p>
 
 
 
+
 <button
 
-className="ghost"
+className="cyber-button"
 
-onClick={()=>setScreen("idle")}
+onClick={()=>setResult(null)}
 
 >
 
-Назад
+Открыть ещё раз
 
 </button>
 
 
 
-</motion.section>
+</motion.div>
 
 
 }
@@ -450,12 +566,21 @@ onClick={()=>setScreen("idle")}
 </AnimatePresence>
 
 
+
 </main>
 
 
 
 
-<footer>
+<footer
+style={{
+position:"relative",
+zIndex:2,
+textAlign:"center",
+padding:20,
+color:"var(--muted)"
+}}
+>
 
 CYBER MART LOYALTY
 
@@ -464,7 +589,6 @@ CYBER MART LOYALTY
 
 
 </div>
-
 
 )
 
