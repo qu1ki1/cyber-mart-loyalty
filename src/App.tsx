@@ -3,8 +3,6 @@ import { AnimatePresence, motion } from "framer-motion";
 
 import { supabase } from "./supabase";
 
-import "./styles/cyber.css";
-
 
 
 type Gift = {
@@ -17,22 +15,74 @@ chance:number;
 
 quantity:number;
 
-active:boolean;
-
 };
+
+
+
+
+
+function randomGift(gifts:Gift[]){
+
+
+const total =
+gifts.reduce(
+(sum,g)=>sum+g.chance,
+0
+);
+
+
+
+let value =
+Math.random()*total;
+
+
+
+for(const gift of gifts){
+
+
+value-=gift.chance;
+
+
+if(value<=0)
+return gift;
+
+
+}
+
+
+
+return gifts[0];
+
+}
+
+
+
+
+
+function generateCode(){
+
+return (
+
+"CM-" +
+
+Math.floor(
+1000+
+Math.random()*9000
+)
+
+);
+
+}
+
+
 
 
 
 export default function App(){
 
 
-const [user,setUser] =
+const [user,setUser]=
 useState<any>(null);
-
-
-
-const [loading,setLoading]=
-useState(false);
 
 
 
@@ -41,12 +91,17 @@ useState(false);
 
 
 
-const [result,setResult]=
+const [gift,setGift]=
 useState<Gift|null>(null);
 
 
 
-const busy =
+const [code,setCode]=
+useState("");
+
+
+
+const lock =
 useRef(false);
 
 
@@ -60,7 +115,6 @@ const tg =
 window.Telegram?.WebApp;
 
 
-
 if(!tg)
 return;
 
@@ -72,15 +126,15 @@ tg.expand();
 
 
 
-const telegramUser =
+const tgUser =
 tg.initDataUnsafe?.user;
 
 
 
-if(telegramUser){
+if(tgUser){
 
 
-setUser(telegramUser);
+setUser(tgUser);
 
 
 
@@ -88,17 +142,11 @@ supabase
 .from("users")
 .upsert({
 
-telegram_id:
-telegramUser.id,
+telegram_id:tgUser.id,
 
+first_name:tgUser.first_name,
 
-first_name:
-telegramUser.first_name,
-
-
-username:
-telegramUser.username
-
+username:tgUser.username
 
 });
 
@@ -114,36 +162,36 @@ telegramUser.username
 
 
 
-
 async function openCase(){
 
 
-if(busy.current)
+if(lock.current)
 return;
 
 
 
-busy.current=true;
+lock.current=true;
 
-
-
-setLoading(true);
 
 setOpening(true);
 
-setResult(null);
+setGift(null);
 
 
 
 try{
 
 
-const {data:gifts,error}=
+const {data,error}=
 
 await supabase
+
 .from("gifts")
+
 .select("*")
+
 .eq("active",true)
+
 .gt("quantity",0);
 
 
@@ -153,90 +201,47 @@ throw error;
 
 
 
-if(!gifts || gifts.length===0)
-throw new Error("Нет подарков");
+if(!data?.length)
+throw new Error();
 
 
 
 
-const total =
-gifts.reduce(
-
-(sum,g)=>
-sum+g.chance,
-
-0
-
-);
-
-
-
-
-let random =
-Math.random()*total;
-
-
-
-let winner =
-gifts[0];
-
-
-
-for(const gift of gifts){
-
-
-random -= gift.chance;
-
-
-
-if(random<=0){
-
-winner=gift;
-
-break;
-
-}
-
-
-}
-
-
+const win =
+randomGift(data);
 
 
 
 await supabase
+
 .from("gifts")
+
 .update({
 
 quantity:
-winner.quantity-1
+win.quantity-1
 
 })
 
 .eq(
 "id",
-winner.id
+win.id
 );
 
 
 
 
-
 await supabase
+
 .from("winners")
+
 .insert({
 
-telegram_id:
-user?.id,
+telegram_id:user?.id,
 
+gift_id:win.id,
 
-gift_id:
-winner.id,
-
-
-gift_name:
-winner.name
-
+gift_name:win.name
 
 });
 
@@ -247,42 +252,32 @@ winner.name
 setTimeout(()=>{
 
 
-setResult(winner);
+setGift(win);
 
+setCode(generateCode());
 
 setOpening(false);
 
 
-},1800);
+},2000);
 
 
 
 }
-
 
 catch(e){
 
-console.error(e);
+console.log(e);
 
 setOpening(false);
 
-alert("Ошибка открытия");
-
-
 }
 
 
-finally{
-
-setLoading(false);
-
-busy.current=false;
-
-}
+lock.current=false;
 
 
 }
-
 
 
 
@@ -301,20 +296,31 @@ return (
 
 
 <header
+
 style={{
 position:"relative",
 zIndex:2,
-padding:"25px",
-textAlign:"center"
+textAlign:"center",
+padding:"30px 20px"
 }}
+
 >
 
 
 <div
+
 className="logo"
+
+style={{
+fontSize:32,
+fontWeight:800,
+letterSpacing:4
+}}
+
 >
 
 CYBER
+
 <span
 style={{
 color:"var(--neon)"
@@ -322,6 +328,7 @@ color:"var(--neon)"
 >
  MART
 </span>
+
 
 </div>
 
@@ -344,12 +351,16 @@ color:"var(--muted)"
 
 
 
+
+
 <main
+
 style={{
 position:"relative",
 zIndex:2,
 padding:20
 }}
+
 >
 
 
@@ -359,7 +370,8 @@ padding:20
 
 {
 
-!result &&
+!gift &&
+
 
 <motion.div
 
@@ -369,52 +381,75 @@ className="cyber-card"
 
 initial={{
 opacity:0,
-y:30
+scale:.9
 }}
 
 animate={{
 opacity:1,
-y:0
+scale:1
 }}
 
->
 
+
+>
 
 
 <h1
 style={{
-textAlign:"center"
+textAlign:"center",
+fontFamily:"Rajdhani"
 }}
 >
 
-🎁 Твой подарок за визит
+Твой подарок за визит
 
 </h1>
 
 
 
 
+
 <motion.div
 
-className={
+animate={
+
 opening
+
 ?
-"shake"
-:
-"float"
+
+{
+
+rotate:[0,-5,5,-5,0],
+
+scale:[1,1.05,1]
+
 }
+
+:
+
+{
+
+y:[0,-10,0]
+
+}
+
+}
+
+transition={{
+
+duration:1,
+
+repeat:opening?Infinity:0
+
+}}
 
 style={{
 
-height:220,
+fontSize:120,
 
-display:"flex",
+textAlign:"center",
 
-alignItems:"center",
-
-justifyContent:"center",
-
-fontSize:100
+margin:"40px 0"
 
 }}
 
@@ -427,18 +462,19 @@ fontSize:100
 
 
 
+
 <button
 
 className="cyber-button"
 
-disabled={loading}
-
 onClick={openCase}
+
+disabled={opening}
 
 >
 
-
 {
+
 opening
 
 ?
@@ -450,7 +486,6 @@ opening
 "Открыть кейс"
 
 }
-
 
 </button>
 
@@ -466,48 +501,69 @@ opening
 
 
 
+
 {
 
-result &&
+gift &&
 
 
 <motion.div
 
-key="result"
+key="win"
 
 className="cyber-card"
 
+
 initial={{
-scale:.8,
+
+scale:.5,
+
 opacity:0
+
 }}
 
+
 animate={{
+
 scale:1,
+
 opacity:1
+
 }}
+
+
 
 >
 
 
 <h1
+
 style={{
+
 textAlign:"center",
+
 color:"var(--neon)"
+
 }}
+
 >
 
-🎉 Победа!
+🎉 Поздравляем!
 
 </h1>
 
 
 
 <div
+
 style={{
-textAlign:"center",
-fontSize:30
+
+fontSize:70,
+
+textAlign:"center"
+
 }}
+
 >
 
 🎁
@@ -517,28 +573,61 @@ fontSize:30
 
 
 <h2
+
 style={{
-textAlign:"center"
+
+textAlign:"center",
+
+fontFamily:"Rajdhani"
+
 }}
+
 >
 
-{result.name}
+{gift.name}
 
 </h2>
 
 
 
-<p
+<div
+
 style={{
+
 textAlign:"center",
-color:"var(--muted)"
+
+padding:15,
+
+borderRadius:14,
+
+background:"rgba(57,255,138,.08)"
+
 }}
+
 >
 
-Покажите этот экран администратору
+Ваш код:
 
-</p>
+<br/>
 
+<strong
+
+style={{
+
+fontSize:28,
+
+color:"var(--neon)"
+
+}}
+
+>
+
+{code}
+
+</strong>
+
+
+</div>
 
 
 
@@ -546,11 +635,15 @@ color:"var(--muted)"
 
 className="cyber-button"
 
-onClick={()=>setResult(null)}
+style={{
+marginTop:20
+}}
+
+onClick={()=>setGift(null)}
 
 >
 
-Открыть ещё раз
+Назад
 
 </button>
 
@@ -573,13 +666,15 @@ onClick={()=>setResult(null)}
 
 
 <footer
+
 style={{
 position:"relative",
 zIndex:2,
 textAlign:"center",
-padding:20,
+padding:30,
 color:"var(--muted)"
 }}
+
 >
 
 CYBER MART LOYALTY
@@ -589,6 +684,7 @@ CYBER MART LOYALTY
 
 
 </div>
+
 
 )
 
