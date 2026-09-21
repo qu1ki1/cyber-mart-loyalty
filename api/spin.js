@@ -152,7 +152,9 @@ export default async function handler(req, res) {
       expires_at: expiresAt,
     })
   } catch (err) {
-    console.error(err)
-    return res.status(500).json({ error: 'Не удалось открыть кейс. Попробуй ещё раз.' })
+    console.error('SPIN ERROR:', err)
+    return res.status(500).json({ 
+      error: err?.message || String(err) || 'Неизвестная ошибка'
+    })
   }
 }
