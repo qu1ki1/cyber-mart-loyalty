@@ -11,6 +11,7 @@ import AdminPanel from './adminpanel/AdminPanel'
 import RegisterInApp from './adminpanel/RegisterInApp'
 import OnboardingChecklist from './adminpanel/OnboardingChecklist'
 import MyCodes from './components/MyCodes'
+import BusinessLogin from './pages/BusinessLogin'
 
 import './App.css'
 
@@ -158,6 +159,14 @@ export default function App() {
         setMode('onboarding')
       }
     })
+  }
+
+  // Если открыто не внутри Telegram (например, просто в браузере на
+  // компьютере) — initData будет пустой строкой. В этом случае вместо
+  // игры показываем вход по паролю для владельца (src/pages/BusinessLogin.tsx).
+  const openedInTelegram = !!window.Telegram?.WebApp?.initData
+  if (!openedInTelegram) {
+    return <BusinessLogin />
   }
 
   // ---------- экраны загрузки/ошибок ----------
