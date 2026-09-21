@@ -11,7 +11,6 @@ import AdminPanel from './adminpanel/AdminPanel'
 import RegisterInApp from './adminpanel/RegisterInApp'
 import OnboardingChecklist from './adminpanel/OnboardingChecklist'
 import MyCodes from './components/MyCodes'
-import BusinessLogin from './pages/BusinessLogin'
 
 import './App.css'
 
@@ -161,14 +160,6 @@ export default function App() {
     })
   }
 
-  // Если открыто не внутри Telegram (например, просто в браузере на
-  // компьютере) — initData будет пустой строкой. В этом случае вместо
-  // игры показываем вход по паролю для владельца (src/pages/BusinessLogin.tsx).
-  const openedInTelegram = !!window.Telegram?.WebApp?.initData
-  if (!openedInTelegram) {
-    return <BusinessLogin />
-  }
-
   // ---------- экраны загрузки/ошибок ----------
   if (loadError) {
     return (
@@ -196,7 +187,24 @@ export default function App() {
     )
   }
 
-  // ---------- нет бизнеса вообще — предлагаем создать прямо тут ----------
+  // Ссылка была, но бизнес по ней не нашёлся — это сломанная/неверная
+  // ссылка, а не "давай создадим новый бизнес". Показываем чётко.
+  if (!activeBusiness && getBusinessSlug()) {
+    return (
+      <div className="app">
+        <div className="bg-grid" />
+        <div className="bg-glow" />
+        <div className="cyber-card">
+          <h1>Бизнес не найден</h1>
+          <div className="status-pill error">
+            Ссылка ведёт на «{getBusinessSlug()}», но такого бизнеса нет. Проверь QR-код или ссылку — возможно, она устарела.
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // ---------- ссылки не было вообще — предлагаем создать бизнес прямо тут ----------
   if (!activeBusiness) {
     return (
       <div className="app">

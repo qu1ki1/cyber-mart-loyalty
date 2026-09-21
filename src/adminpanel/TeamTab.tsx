@@ -34,6 +34,8 @@ export default function TeamTab({ telegramId, slug, botUsername }: Props) {
 }
 
 function QrCard({ slug, botUsername }: { slug: string; botUsername: string }) {
+  const [downloading, setDownloading] = useState(false)
+
   if (!botUsername) {
     return (
       <div className="panel-card">
@@ -46,7 +48,31 @@ function QrCard({ slug, botUsername }: { slug: string; botUsername: string }) {
   }
 
   const deepLink = `https://t.me/${botUsername}?start=${slug}`
-  const qrImg = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=10&data=${encodeURIComponent(deepLink)}`
+  // Печатный размер побольше (900px) — чтобы не размывалось при печати А5/А4.
+  const qrImg = `https://api.qrserver.com/v1/create-qr-code/?size=900x900&margin=20&data=${encodeURIComponent(deepLink)}`
+
+  async function downloadQr() {
+    setDownloading(true)
+    try {
+      // Просто <a href download> не работает для внешних картинок — браузер
+      // такое скачивание блокирует. Поэтому качаем как файл сами и отдаём
+      // как blob-ссылку — так скачивается по-настоящему, а не открывается вкладкой.
+      const res = await fetch(qrImg)
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `qr-${slug}.png`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+    } catch {
+      window.open(qrImg, '_blank')
+    } finally {
+      setDownloading(false)
+    }
+  }
 
   return (
     <div className="panel-card" style={{ textAlign: 'center' }}>
@@ -58,9 +84,9 @@ function QrCard({ slug, botUsername }: { slug: string; botUsername: string }) {
         style={{ width: 180, height: 180, borderRadius: 12, background: '#fff', padding: 10, margin: '4px auto 12px' }}
       />
       <div style={{ fontSize: 12, color: 'var(--muted)', wordBreak: 'break-all', marginBottom: 10 }}>{deepLink}</div>
-      <a href={qrImg} download={`qr-${slug}.png`} className="panel-btn" style={{ display: 'inline-block', textDecoration: 'none' }}>
-        Скачать QR
-      </a>
+      <button className="panel-btn" onClick={downloadQr} disabled={downloading}>
+        {downloading ? 'Скачиваю…' : 'Скачать QR для печати'}
+      </button>
     </div>
   )
 }

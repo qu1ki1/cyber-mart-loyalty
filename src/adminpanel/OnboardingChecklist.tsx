@@ -9,7 +9,7 @@ export default function OnboardingChecklist({ businessName, onContinue }: Props)
       </p>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: '100%', maxWidth: 320, marginBottom: 26 }}>
-        <Step n={1} title="Проверь призы" desc="Вкладка «Призы» — поправь названия и веса под себя" />
+        <Step n={1} title="Проверь призы" desc="Вкладка «Призы» — поправь названия и проценты под себя" />
         <Step n={2} title="Скачай QR-код" desc="Вкладка «Команда» — распечатай и повесь у входа или на кассе" />
         <Step n={3} title="Пригласи персонал" desc="Там же — ссылка для кассира, без паролей" />
       </div>

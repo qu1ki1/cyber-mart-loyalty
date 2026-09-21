@@ -33,7 +33,7 @@ export default async function handler(req, res) {
     const text = (body.message.text || '').trim()
 
     if (!text.startsWith('/start')) {
-      await send(chatId, 'LOYALTY', APP_URL)
+      await send(chatId, '👋 Привет! Нажми кнопку ниже, чтобы открыть приложение.', APP_URL)
       return res.status(200).json({ ok: true })
     }
 
@@ -41,7 +41,11 @@ export default async function handler(req, res) {
     const payload = parts.length > 1 ? parts[1].trim() : ''
 
     if (!payload) {
-      await send(chatId, 'LOYALTY', APP_URL)
+      await send(
+        chatId,
+        '🎮 LOYALTY\n\nЭто платформа программ лояльности. Если ты гость заведения — отсканируй QR-код на месте. Если хочешь запустить свою программу — жми кнопку и заполни короткую форму.',
+        APP_URL
+      )
       return res.status(200).json({ ok: true })
     }
 
@@ -52,11 +56,11 @@ export default async function handler(req, res) {
       const { data: invite } = await supabase.from('invites').select('*, businesses(name, slug)').eq('code', code).maybeSingle()
 
       if (!invite) {
-        await send(chatId, 'Приглашение не найдено или устарело.', APP_URL)
+        await send(chatId, '⚠️ Эта ссылка-приглашение не найдена или уже устарела. Попроси владельца создать новую.', APP_URL)
         return res.status(200).json({ ok: true })
       }
       if (invite.used_by) {
-        await send(chatId, 'Эта ссылка уже была использована.', APP_URL)
+        await send(chatId, '⚠️ Эта ссылка-приглашение уже была использована кем-то другим. Попроси владельца создать новую.', APP_URL)
         return res.status(200).json({ ok: true })
       }
 
@@ -66,16 +70,23 @@ export default async function handler(req, res) {
       )
       await supabase.from('invites').update({ used_by: telegramId, used_at: new Date().toISOString() }).eq('id', invite.id)
 
+      const roleLabel = invite.role === 'manager' ? 'управляющим' : 'сотрудником'
       const appUrl = `${APP_URL}/?biz=${encodeURIComponent(invite.businesses.slug)}`
-      await send(chatId, `Готово! Ты добавлен в «${invite.businesses.name}».`, appUrl)
+      await send(chatId, `✅ Готово! Теперь ты ${roleLabel} в «${invite.businesses.name}». Открой приложение — там уже доступна касса.`, appUrl)
       return res.status(200).json({ ok: true })
     }
 
     // ---------- обычный вход (клиент по ссылке заведения) ----------
     const slug = payload
+    const { data: business } = await supabase.from('businesses').select('name').ilike('slug', slug).maybeSingle()
     const appUrl = `${APP_URL}/?biz=${encodeURIComponent(slug)}`
 
-    await send(chatId, 'LOYALTY', appUrl)
+    if (!business) {
+      await send(chatId, '⚠️ Эта ссылка ведёт на несуществующий бизнес — возможно, QR-код устарел.', APP_URL)
+      return res.status(200).json({ ok: true })
+    }
+
+    await send(chatId, `🎁 ${business.name}\n\nТвой подарок за визит ждёт внутри — жми кнопку!`, appUrl)
     return res.status(200).json({ ok: true })
   } catch (e) {
     console.log(e)

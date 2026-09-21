@@ -9,11 +9,10 @@ type Business = {
   text_color?: string | null
   description?: string | null
   reminder_text?: string | null
-  owner_password?: string
 }
 
 export default function BrandTab({ telegramId, slug, onSaved }: Props) {
-  const [form, setForm] = useState<Business>({ name: '', primary_color: '#39ff8a', text_color: '#eef7f0', description: '', reminder_text: '', owner_password: '' })
+  const [form, setForm] = useState<Business>({ name: '', primary_color: '#39ff8a', text_color: '#eef7f0', description: '', reminder_text: '' })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -40,18 +39,10 @@ export default function BrandTab({ telegramId, slug, onSaved }: Props) {
     setSaved(false)
     setError(null)
     try {
-      const payload: typeof form & { init_data?: string; password?: string; telegram_id: number; slug: string } = {
-        ...getAuthFields(),
-        telegram_id: telegramId,
-        slug,
-        ...form,
-      }
-      if (!payload.owner_password) delete payload.owner_password
-
       const res = await fetch('/api/business-settings', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ ...getAuthFields(), telegram_id: telegramId, slug, ...form }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Не удалось сохранить')
@@ -113,7 +104,7 @@ export default function BrandTab({ telegramId, slug, onSaved }: Props) {
           placeholder="Описание заведения"
         />
 
-<label style={{ fontSize: 12, color: 'var(--muted)' }}>Текст напоминания о сгорающем подарке (необязательно)</label>
+        <label style={{ fontSize: 12, color: 'var(--muted)' }}>Текст напоминания о сгорающем подарке (необязательно)</label>
         <textarea
           className="panel-input"
           rows={2}
@@ -121,19 +112,6 @@ export default function BrandTab({ telegramId, slug, onSaved }: Props) {
           onChange={(e) => setForm({ ...form, reminder_text: e.target.value })}
           placeholder="Если оставить пустым — используется стандартный текст"
         />
-
-                <label style={{ fontSize: 12, color: 'var(--muted)' }}>Пароль для входа с компьютера (без Telegram)</label>
-        <input
-          className="panel-input"
-          type="text"
-          value={form.owner_password || ''}
-          onChange={(e) => setForm({ ...form, owner_password: e.target.value })}
-          placeholder="Оставь пустым, если не хочешь менять"
-          style={{ textAlign: 'left' }}
-        />
-        <p className="panel-hint" style={{ marginTop: -2 }}>
-          С этим паролем можно зайти в управление с обычного браузера, не открывая Telegram — на странице /login.
-        </p>
 
         <button className="panel-btn" type="submit" disabled={saving}>
           {saving ? 'Сохранение…' : saved ? 'Сохранено ✓' : 'Сохранить'}
