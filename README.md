@@ -1,75 +1,155 @@
-# React + TypeScript + Vite
+# LOYALTY — всё в одном мини-приложении
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Один Telegram Mini App на всех: гость играет, владелец/управляющий/персонал
+управляют — всё в одном и том же приложении, без сайта и без команд боту.
+Бот теперь делает только одно — открывает приложение.
 
-Currently, two official plugins are available:
+## Как это работает
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Приложение само понимает, кто его открыл, по Telegram-аккаунту:
 
-## React Compiler
+- **Обычный гость** (отсканировал QR в заведении) → видит игру: кейс, приз, код
+- **Владелец/управляющий/персонал** → видит ту же самую игру, но в шапке
+  появляется маленькая иконка ⚙️ — нажал, переключился в панель управления,
+  нажал ещё раз — вернулся к игре
+- **Владелец открыл бота "просто так"** (без QR) → сразу открывается панель
+  управления, без лишнего экрана игры
+- **Никто ни к чему не привязан и бизнеса нет** → приложение само
+  предлагает создать бизнес прямо на месте — вводишь название, готово
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Что видно в панели — по роли
 
-## Expanding the ESLint configuration
+- **Персонал** — только «Касса» (погасить код гостя)
+- **Управляющий** — Касса + Статистика
+- **Владелец** — Касса, Призы, Бренд, Статистика, Команда
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Как владельцу подключить персонал (без паролей)
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+Вкладка **Команда** → «Пригласить сотрудника» или «Пригласить управляющего» →
+приложение выдаёт одноразовую ссылку вида `t.me/бот?start=join-xxxxx` →
+просто перешли её человеку в любом мессенджере. Он переходит по ссылке,
+открывается бот → «Открыть приложение» → всё, его Telegram-аккаунт уже
+привязан нужной ролью, приложение сразу покажет ему панель.
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## Технически, что изменилось
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+- Пароли (`owner_password`, `staff_password`, `manager_password`,
+  `ADMIN_PASSWORD`, `SUPER_ADMIN_PASSWORD` в Vercel) **больше не используются
+  нигде в коде** — можно удалить переменные окружения, если хочешь порядка
+- Все веб-страницы `/admin`, `/staff`, `/manager`, `/register`, `/super-admin`
+  удалены — их больше нет в проекте
+- Доступ определяется таблицей `admins` (business_id + telegram_id + role) —
+  прав добавляешь через приглашения внутри приложения, ничего вручную в базе
+  трогать не нужно
+- Команды в чате с ботом (`/newbusiness`, `/grant` и т.д. из прошлой версии)
+  тоже убраны — бот отвечает только на `/start`
 
-```
+## Известное упрощение (сознательно оставил как есть)
 
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
+Список всех гостей и полная история выигрышей (то, что раньше было на
+`/admin/users` и `/admin/winners`) в новую панель пока не перенёс — решил,
+что для «максимально просто» это не первоочередное, вкладка «Статистика»
+даёт нужные числа. Если понадобится подробный список — скажи, добавлю
+отдельной вкладкой.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Деплой
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+1. Выполни `supabase-migration-v3.sql` ещё раз (добавились таблицы `admins`
+   и `invites`)
+2. Замени папку `app` в проекте целиком — слишком много файлов удалено и
+   переименовано, безопаснее заменить всю папку, чем накладывать построчно
+3. Переменные окружения в Vercel — можно оставить как есть, лишние
+   (`ADMIN_PASSWORD` и т.п.) просто больше не читаются кодом
+4. `git add -A && git commit -m "everything inside the mini app" && git push`
 
-```
+## Проверка
+
+1. Напиши боту `/start` без ничего → должен предложить открыть приложение
+2. Открой приложение с чистого Telegram-аккаунта (без привязок) → должна
+   появиться форма «Создать бизнес»
+3. Создай бизнес → сразу должна открыться панель управления
+4. Вкладка «Команда» → создай приглашение → перейди по ссылке с другого
+   аккаунта → у него должна появиться касса
+5. Отсканируй свой же QR (`t.me/бот?start=<slug>`) под аккаунтом владельца →
+   должна открыться игра, а в шапке — шестерёнка для переключения на панель
+
+## ВАЖНО: база данных пересобрана с нуля
+
+Оказалось, таблиц вообще не было в этом Supabase-проекте (не кэш, а
+физическое отсутствие). Теперь один файл создаёт всё с нуля:
+
+**`supabase-schema.sql`** — выполни его в SQL Editor. Старые
+`supabase-migration.sql` и `supabase-migration-v3.sql` удалены из
+проекта, они больше не нужны, вся база теперь описана в одном файле.
+
+После этого:
+1. Замени папку `app` целиком
+2. `git add -A && git commit -m "полная схема базы" && git push`
+3. Попробуй создать бизнес заново
+
+
+---
+
+# Версия 1.1 — что нового
+
+## Дизайн и брендинг
+- Убрал загрузку картинки-логотипа — бренд теперь только текстом
+  (название бизнеса показывается рядом с фирменной надписью LOYALTY,
+  которая видна всегда, на любом бизнесе)
+- Убрал выбор готовых тем (Neon Gaming/Luxury и т.д.) — вместо этого
+  два независимых цвета: акцентный (кнопки/подсветка/барабан) и
+  отдельно цвет текста/заголовков — оба меняются вживую
+- Вкладка «Бренд» → «Дизайн»
+- Вкладка «Касса» → «Админ»
+- Кнопка «Зарегистрировать свой бизнес» теперь прямо на главном экране
+  игры (была только в панели — убрал оттуда, чтобы не дублировать)
+
+## Призы
+- Все призы теперь редактируются: название, процент, **и иконка**
+- Иконок — 44 штуки (часы, кубок, монета, корона, ракета, торт, зонт
+  и т.д.), выбираются из сетки при добавлении и при редактировании.
+  Иконки настоящие (`lucide-react`, уже была в проекте), не самодельные
+- Слова «шанс»/«вес» заменены на «процент выпадения» везде
+- Добавлена подсказка: чем ценнее приз — тем ниже должен быть процент
+- Новая настройка **срок действия кода** (в днях) — раньше было жёстко
+  зашито 14 дней, теперь каждый бизнес настраивает сам
+
+## Статистика
+- Переключатель День / Неделя / Месяц
+- Добавлены «уникальные гости» и «% погашения»
+- Разбивка по призам (сколько раз выпал каждый)
+
+## Важное техническое изменение — лимит функций Vercel
+На бесплатном плане Vercel разрешено не больше 12 serverless-функций
+(ты уже упирался в это один раз). Из-за роста количества эндпоинтов
+пришлось:
+- Убрать `api/_verifyTelegram.js` из папки `api/` — он не является
+  отдельным адресом, а просто общим кодом, который используют остальные
+  файлы, поэтому вынес его в `lib/verifyTelegram.js` (это не считается
+  функцией)
+- Объединить `api/stats.js` и `api/history.js` в один `api/reports.js`
+  (разные данные по параметру `?type=stats` / `?type=history`)
+
+Итог — ровно 12 функций, укладываемся в лимит.
+
+## Новые переменные окружения
+Не нужны — всё работает на тех же, что были.
+
+## Деплой (как обычно)
+1. Выполни `supabase-schema.sql` ещё раз — в конце добавились
+   `text_color` и `code_lifetime_days`
+2. **Замени папку `app` целиком** — слишком много файлов переименовано,
+   удалено и перенесено (появилась папка `lib/`, исчезли
+   `api/stats.js`, `api/history.js`, `api/_verifyTelegram.js`)
+3. `git add -A && git commit -m "v1.1: design tab, editable prizes with icons, expiry setting, expanded stats" && git push`
+
+## Проверка
+1. `/admin` → «Дизайн» → поменяй акцентный и текстовый цвет по отдельности,
+   сохрани → перезайди в игру, убедись что оба цвета применились
+2. «Призы» → добавь приз с иконкой → она должна появиться в барабане при
+   следующем открытии кейса
+3. «Призы» → поменяй «Срок действия кода» на, например, 7 дней → новый
+   выигрыш должен показывать правильную дату истечения
+4. «Статистика» → переключи День/Неделя/Месяц → цифры должны меняться
+5. Главный экран игры → должна быть видна кнопка «Зарегистрировать свой
+   бизнес», а в панели админа её быть не должно

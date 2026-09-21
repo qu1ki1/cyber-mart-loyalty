@@ -64,27 +64,15 @@ async function fetchStatus(slug: string): Promise<SpinResult> {
   return res.json()
 }
 
-async function requestSpin(slug: string, ref?: string | null): Promise<SpinResult> {
+async function requestSpin(slug: string): Promise<SpinResult> {
   const res = await fetch('/api/spin', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ init_data: getInitData(), slug, ref }),
+    body: JSON.stringify({ init_data: getInitData(), slug }),
   })
   const data = await res.json()
   if (!res.ok) throw new Error(data.error || 'Не удалось открыть кейс')
   return data
-}
-
-function shareReferral(telegramId: number, slug: string) {
-  if (!BOT_USERNAME) return
-  const deepLink = `https://t.me/${BOT_USERNAME}?start=${slug}-ref-${telegramId}`
-  const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(deepLink)}&text=${encodeURIComponent('Забери свой подарок 🎁')}`
-  const tg = window.Telegram?.WebApp
-  if (tg && (tg as unknown as { openTelegramLink?: (url: string) => void }).openTelegramLink) {
-    ;(tg as unknown as { openTelegramLink: (url: string) => void }).openTelegramLink(shareUrl)
-  } else {
-    window.open(shareUrl, '_blank')
-  }
 }
 
 export default function App() {
@@ -150,8 +138,7 @@ export default function App() {
     setScreen('roll')
 
     try {
-      const ref = new URLSearchParams(window.location.search).get('ref')
-      const spin = await requestSpin(activeBusiness.slug, ref)
+      const spin = await requestSpin(activeBusiness.slug)
       setResult(spin)
     } catch (err) {
       setScreen('open')
@@ -304,11 +291,7 @@ export default function App() {
                     <button className="cta-outline" onClick={() => setMode('register')}>
                       Зарегистрировать свой бизнес
                     </button>
-                    {BOT_USERNAME && (
-                      <button className="ghost" onClick={() => shareReferral(telegramUser.id, activeBusiness.slug)}>
-                        Пригласить друга (+1 попытка тебе)
-                      </button>
-                    )}
+
                   </>
                 )}
               </motion.div>

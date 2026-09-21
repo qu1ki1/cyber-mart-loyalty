@@ -71,11 +71,9 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true })
     }
 
-    // ---------- обычный вход (клиент по ссылке / реферал) ----------
-    const refMatch = payload.match(/^(.+)-ref-(\d+)$/)
-    const slug = refMatch ? refMatch[1] : payload
-    const ref = refMatch ? refMatch[2] : ''
-    const appUrl = `${APP_URL}/?biz=${encodeURIComponent(slug)}${ref ? `&ref=${encodeURIComponent(ref)}` : ''}`
+    // ---------- обычный вход (клиент по ссылке заведения) ----------
+    const slug = payload
+    const appUrl = `${APP_URL}/?biz=${encodeURIComponent(slug)}`
 
     await send(chatId, 'LOYALTY', appUrl)
     return res.status(200).json({ ok: true })

@@ -1,14 +1,34 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { getInitData } from '../telegramAuth'
 
 type Props = { telegramId: number; slug: string; botUsername: string }
+type Member = { id: number; role: 'manager' | 'staff'; added_at: string; name: string }
 
 export default function TeamTab({ telegramId, slug, botUsername }: Props) {
+  const [refreshKey, setRefreshKey] = useState(0)
+
   return (
     <div>
       <QrCard slug={slug} botUsername={botUsername} />
-      <InviteCard telegramId={telegramId} slug={slug} role="manager" botUsername={botUsername} title="Пригласить управляющего" hint="Может гасить коды и выдавать попытки" />
-      <InviteCard telegramId={telegramId} slug={slug} role="staff" botUsername={botUsername} title="Пригласить сотрудника" hint="Может только гасить коды" />
+      <InviteCard
+        telegramId={telegramId}
+        slug={slug}
+        role="manager"
+        botUsername={botUsername}
+        title="Пригласить управляющего"
+        hint="Может гасить коды и выдавать попытки"
+        onCreated={() => setRefreshKey((k) => k + 1)}
+      />
+      <InviteCard
+        telegramId={telegramId}
+        slug={slug}
+        role="staff"
+        botUsername={botUsername}
+        title="Пригласить сотрудника"
+        hint="Может только гасить коды"
+        onCreated={() => setRefreshKey((k) => k + 1)}
+      />
+      <TeamList telegramId={telegramId} slug={slug} refreshKey={refreshKey} />
     </div>
   )
 }
@@ -52,6 +72,7 @@ function InviteCard({
   botUsername,
   title,
   hint,
+  onCreated,
 }: {
   telegramId: number
   slug: string
@@ -59,6 +80,7 @@ function InviteCard({
   botUsername: string
   title: string
   hint: string
+  onCreated: () => void
 }) {
   const [link, setLink] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -69,7 +91,7 @@ function InviteCard({
     setError(null)
     setLink(null)
     try {
-      const res = await fetch('/api/invite', {
+      const res = await fetch('/api/team', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ init_data: getInitData(), telegram_id: telegramId, slug, role }),
@@ -77,6 +99,7 @@ function InviteCard({
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Не удалось создать приглашение')
       setLink(`https://t.me/${botUsername}?start=join-${data.code}`)
+      onCreated()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Не удалось создать приглашение')
     } finally {
@@ -105,6 +128,58 @@ function InviteCard({
         </div>
       )}
       {error && <div className="panel-error">{error}</div>}
+    </div>
+  )
+}
+
+function TeamList({ telegramId, slug, refreshKey }: { telegramId: number; slug: string; refreshKey: number }) {
+  const [members, setMembers] = useState<Member[] | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  function load() {
+    fetch(`/api/team?init_data=${encodeURIComponent(getInitData())}&slug=${encodeURIComponent(slug)}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data)) setMembers(data)
+        else setError(data.error || 'Не удалось загрузить команду')
+      })
+      .catch(() => setError('Не удалось загрузить команду'))
+  }
+
+  useEffect(load, [slug, refreshKey])
+
+  async function remove(id: number) {
+    await fetch('/api/team', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ init_data: getInitData(), telegram_id: telegramId, slug, admin_id: id }),
+    })
+    load()
+  }
+
+  const roleLabel: Record<Member['role'], string> = { manager: 'управляющий', staff: 'сотрудник' }
+
+  return (
+    <div className="panel-card">
+      <h2>Команда</h2>
+      {error && <div className="panel-error">{error}</div>}
+      {!error && members === null && <p className="panel-hint">Загрузка…</p>}
+      {!error && members && members.length === 0 && <p className="panel-hint">Пока никого не приглашал(а)</p>}
+      {members &&
+        members.map((m) => (
+          <div className="panel-row" key={m.id}>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 13.5 }}>{m.name}</div>
+              <div style={{ fontSize: 11, color: 'var(--muted)' }}>{roleLabel[m.role]}</div>
+            </div>
+            <button
+              onClick={() => remove(m.id)}
+              style={{ background: 'none', border: 'none', color: '#ff6b6b', cursor: 'pointer', fontSize: 12 }}
+            >
+              удалить
+            </button>
+          </div>
+        ))}
     </div>
   )
 }
