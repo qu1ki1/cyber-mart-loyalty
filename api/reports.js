@@ -44,6 +44,19 @@ async function handleStats(req, res, business) {
     .map(([name, count]) => ({ name, count }))
     .sort((a, b) => b.count - a.count)
 
+  // Список пользователей с @username и количеством попыток (bonus_attempts)
+  const { data: users } = await supabase
+    .from('users')
+    .select('telegram_id, username, first_name, bonus_attempts')
+    .eq('business_id', business.id)
+    .order('bonus_attempts', { ascending: false })
+    .limit(100)
+
+  const usersList = (users || []).map((u) => ({
+    username: u.username ? `@${u.username}` : (u.first_name || `id${u.telegram_id}`),
+    attempts: u.bonus_attempts ?? 0,
+  }))
+
   return res.status(200).json({
     period,
     total_spins: total,
@@ -51,6 +64,7 @@ async function handleStats(req, res, business) {
     unique_guests: uniqueGuests,
     redeem_rate: rate,
     breakdown: breakdownList,
+    users: usersList,
   })
 }
 

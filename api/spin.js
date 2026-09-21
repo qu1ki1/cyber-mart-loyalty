@@ -22,8 +22,8 @@ function expiresAtISO(lifetimeDays) {
   return d.toISOString()
 }
 
-function generateCode(prefix = 'CM') {
-  return `${prefix}-${Math.floor(1000 + Math.random() * 9000)}`
+function generateCode() {
+  return String(Math.floor(10000 + Math.random() * 90000))
 }
 
 function pickWeighted(gifts) {
@@ -127,7 +127,7 @@ export default async function handler(req, res) {
     }
 
     const winner = pickWeighted(gifts)
-    const code = generateCode(winner.prefix || 'CM')
+    const code = generateCode()
     const expiresAt = expiresAtISO(business.code_lifetime_days)
 
     const { error: insertError } = await supabase.from('winners').insert({
@@ -141,10 +141,12 @@ export default async function handler(req, res) {
     })
     if (insertError) throw insertError
 
+    let remainingBonus = bonusAttempts
     if (existing && bonusAttempts > 0) {
+      remainingBonus = bonusAttempts - 1
       await supabase
         .from('users')
-        .update({ bonus_attempts: bonusAttempts - 1 })
+        .update({ bonus_attempts: remainingBonus })
         .eq('telegram_id', telegramId)
         .eq('business_id', business.id)
     }
@@ -156,7 +158,7 @@ export default async function handler(req, res) {
       icon: winner.icon || 'star',
       code,
       expires_at: expiresAt,
-      bonus_attempts: existing ? bonusAttempts - 1 : bonusAttempts,
+      bonus_attempts: remainingBonus,
     })
   } catch (err) {
     console.error('SPIN ERROR:', err)

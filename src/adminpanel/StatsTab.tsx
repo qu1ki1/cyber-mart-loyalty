@@ -9,6 +9,7 @@ type Stats = {
   unique_guests: number
   redeem_rate: number
   breakdown: { name: string; count: number }[]
+  users: { username: string; attempts: number }[]
 }
 
 const LABELS: Record<Period, string> = { day: 'День', week: 'Неделя', month: 'Месяц' }
@@ -68,6 +69,15 @@ export default function StatsTab({ telegramId, slug }: Props) {
             <div className="panel-row" key={b.name}>
               <span>{b.name}</span>
               <span style={{ color: 'var(--neon)', fontWeight: 600 }}>{b.count}</span>
+            </div>
+          ))}
+
+          <h3 style={{ fontSize: 13, color: 'var(--muted)', margin: '18px 0 10px', textAlign: 'center' }}>Пользователи</h3>
+          {(!stats.users || stats.users.length === 0) && <p className="panel-hint">Пока пусто</p>}
+          {stats.users?.map((u) => (
+            <div className="panel-row" key={u.username}>
+              <span>{u.username}</span>
+              <span style={{ color: 'var(--neon)', fontWeight: 600 }}>{u.attempts} попыток</span>
             </div>
           ))}
         </>
