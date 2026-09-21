@@ -7,6 +7,7 @@
 // owner и manager могут всё, staff — только смотреть.
 
 import { createClient } from '@supabase/supabase-js'
+import { getVerifiedUser } from '../lib/verifyTelegram.js'
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
 
@@ -26,9 +27,12 @@ async function resolveAdmin(telegramId, slug) {
 }
 
 export default async function handler(req, res) {
-  const telegramId = Number(req.method === 'GET' ? req.query.telegram_id : req.body?.telegram_id)
+  const verified = getVerifiedUser(req)
+  if (!verified) return res.status(401).json({ error: 'Не удалось подтвердить, что это ты. Перезапусти приложение.' })
+  const telegramId = verified.id
+
   const slug = req.method === 'GET' ? req.query.slug : req.body?.slug
-  if (!telegramId || !slug) return res.status(400).json({ error: 'Не хватает данных' })
+  if (!slug) return res.status(400).json({ error: 'Не хватает данных' })
 
   const resolved = await resolveAdmin(telegramId, slug)
   if (resolved.error) return res.status(403).json({ error: resolved.error })
@@ -45,11 +49,11 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'POST') {
-      const { name, chance } = req.body || {}
-      if (!name || !chance || chance <= 0) return res.status(400).json({ error: 'Укажи название и вес больше 0' })
+      const { name, chance, icon } = req.body || {}
+      if (!name || !chance || chance <= 0) return res.status(400).json({ error: 'Укажи название и процент больше 0' })
       const { data, error } = await supabase
         .from('gifts')
-        .insert({ business_id: resolved.businessId, name, chance, icon: 'star', rarity: 'rare', active: true })
+        .insert({ business_id: resolved.businessId, name, chance, icon: icon || 'star', rarity: 'rare', active: true })
         .select()
         .single()
       if (error) throw error
@@ -57,11 +61,12 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'PUT') {
-      const { id, active, chance, name } = req.body || {}
+      const { id, active, chance, name, icon } = req.body || {}
       const updates = {}
       if (active !== undefined) updates.active = active
       if (chance !== undefined) updates.chance = chance
       if (name !== undefined) updates.name = name
+      if (icon !== undefined) updates.icon = icon
       const { data, error } = await supabase
         .from('gifts')
         .update(updates)

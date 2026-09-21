@@ -2,6 +2,7 @@
 // POST /api/business-register  { name, telegram_id }
 
 import { createClient } from '@supabase/supabase-js'
+import { getVerifiedUser } from '../lib/verifyTelegram.js'
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
 
@@ -25,9 +26,12 @@ const DEFAULT_GIFTS = [
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Метод не поддерживается' })
 
-  const { name, telegram_id } = req.body || {}
-  const telegramId = Number(telegram_id)
-  if (!name || !telegramId) return res.status(400).json({ error: 'Укажи название бизнеса' })
+  const verified = getVerifiedUser(req)
+  if (!verified) return res.status(401).json({ error: 'Не удалось подтвердить, что это ты. Перезапусти приложение.' })
+  const telegramId = verified.id
+
+  const { name } = req.body || {}
+  if (!name) return res.status(400).json({ error: 'Укажи название бизнеса' })
 
   try {
     let slug = slugify(name)

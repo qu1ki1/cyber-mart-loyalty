@@ -4,9 +4,10 @@
 //     owner и manager могут менять.
 
 import { createClient } from '@supabase/supabase-js'
+import { getVerifiedUser } from '../lib/verifyTelegram.js'
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
-const PUBLIC_FIELDS = 'id, slug, name, logo_url, primary_color, design_theme, description'
+const PUBLIC_FIELDS = 'id, slug, name, logo_url, primary_color, text_color, design_theme, description, reminder_text, code_lifetime_days'
 
 export default async function handler(req, res) {
   if (req.method === 'GET') {
@@ -25,9 +26,12 @@ export default async function handler(req, res) {
 
   if (req.method !== 'PUT') return res.status(405).json({ error: 'Метод не поддерживается' })
 
-  const { telegram_id, slug, name, logo_url, primary_color, design_theme, description, custom_domain } = req.body || {}
-  const telegramId = Number(telegram_id)
-  if (!slug || !telegramId) return res.status(400).json({ error: 'Не хватает данных' })
+  const verified = getVerifiedUser(req)
+  if (!verified) return res.status(401).json({ error: 'Не удалось подтвердить, что это ты. Перезапусти приложение.' })
+  const telegramId = verified.id
+
+  const { slug, name, logo_url, primary_color, text_color, design_theme, description, custom_domain, reminder_text, code_lifetime_days } = req.body || {}
+  if (!slug) return res.status(400).json({ error: 'Не хватает данных' })
 
   const { data: business } = await supabase.from('businesses').select('id').ilike('slug', slug).maybeSingle()
   if (!business) return res.status(404).json({ error: 'Бизнес не найден' })
@@ -39,9 +43,12 @@ export default async function handler(req, res) {
   if (name !== undefined) updates.name = name
   if (logo_url !== undefined) updates.logo_url = logo_url
   if (primary_color !== undefined) updates.primary_color = primary_color
+  if (text_color !== undefined) updates.text_color = text_color
   if (design_theme !== undefined) updates.design_theme = design_theme
   if (description !== undefined) updates.description = description
   if (custom_domain !== undefined) updates.custom_domain = custom_domain || null
+  if (reminder_text !== undefined) updates.reminder_text = reminder_text || null
+  if (code_lifetime_days !== undefined) updates.code_lifetime_days = Math.max(1, Number(code_lifetime_days) || 14)
 
   const { data, error } = await supabase.from('businesses').update(updates).eq('id', business.id).select(PUBLIC_FIELDS).single()
   if (error) return res.status(500).json({ error: 'Не удалось загрузить настройки бренда.' })

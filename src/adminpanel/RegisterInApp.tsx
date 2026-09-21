@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { getInitData } from '../telegramAuth'
 
 type Props = { telegramId: number; onCreated: (slug: string) => void }
 
@@ -16,7 +17,7 @@ export default function RegisterInApp({ telegramId, onCreated }: Props) {
       const res = await fetch('/api/business-register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name.trim(), telegram_id: telegramId }),
+        body: JSON.stringify({ init_data: getInitData(), name: name.trim(), telegram_id: telegramId }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Не удалось создать бизнес')

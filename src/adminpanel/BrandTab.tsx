@@ -1,17 +1,18 @@
 import { useEffect, useState } from 'react'
-import { THEMES, THEME_LABELS, type ThemeKey } from '../themes'
+import { getInitData } from '../telegramAuth'
 
 type Props = { telegramId: number; slug: string; onSaved?: () => void }
 
 type Business = {
   name: string
   primary_color?: string | null
-  design_theme?: ThemeKey | null
+  text_color?: string | null
   description?: string | null
+  reminder_text?: string | null
 }
 
 export default function BrandTab({ telegramId, slug, onSaved }: Props) {
-  const [form, setForm] = useState<Business>({ name: '', primary_color: '#39ff8a', design_theme: 'neon_gaming', description: '' })
+  const [form, setForm] = useState<Business>({ name: '', primary_color: '#39ff8a', text_color: '#eef7f0', description: '', reminder_text: '' })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -24,8 +25,9 @@ export default function BrandTab({ telegramId, slug, onSaved }: Props) {
         setForm({
           name: data.name || '',
           primary_color: data.primary_color || '#39ff8a',
-          design_theme: data.design_theme || 'neon_gaming',
+          text_color: data.text_color || '#eef7f0',
           description: data.description || '',
+          reminder_text: data.reminder_text || '',
         })
       )
       .finally(() => setLoading(false))
@@ -40,7 +42,7 @@ export default function BrandTab({ telegramId, slug, onSaved }: Props) {
       const res = await fetch('/api/business-settings', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ telegram_id: telegramId, slug, ...form }),
+        body: JSON.stringify({ init_data: getInitData(), telegram_id: telegramId, slug, ...form }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Не удалось сохранить')
@@ -57,10 +59,12 @@ export default function BrandTab({ telegramId, slug, onSaved }: Props) {
 
   return (
     <div className="panel-card">
-      <h2>Настройки бренда</h2>
+      <h2>Настройки дизайна</h2>
       <form onSubmit={handleSave} className="panel-form">
+        <label style={{ fontSize: 12, color: 'var(--muted)' }}>Название бизнеса</label>
         <input className="panel-input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Название" required />
 
+        <label style={{ fontSize: 12, color: 'var(--muted)' }}>Акцентный цвет (кнопки, подсветка, барабан)</label>
         <div style={{ display: 'flex', gap: 10 }}>
           <input
             type="color"
@@ -68,20 +72,29 @@ export default function BrandTab({ telegramId, slug, onSaved }: Props) {
             onChange={(e) => setForm({ ...form, primary_color: e.target.value })}
             style={{ width: 44, height: 44, padding: 0, border: 'none', background: 'none' }}
           />
-          <input className="panel-input" value={form.primary_color || ''} onChange={(e) => setForm({ ...form, primary_color: e.target.value })} />
+          <input
+            className="panel-input"
+            value={form.primary_color || ''}
+            onChange={(e) => setForm({ ...form, primary_color: e.target.value })}
+            style={{ textAlign: 'left' }}
+          />
         </div>
 
-        <select
-          className="panel-input"
-          value={form.design_theme || 'neon_gaming'}
-          onChange={(e) => setForm({ ...form, design_theme: e.target.value as ThemeKey })}
-        >
-          {(Object.keys(THEMES) as ThemeKey[]).map((key) => (
-            <option key={key} value={key}>
-              {THEME_LABELS[key]}
-            </option>
-          ))}
-        </select>
+        <label style={{ fontSize: 12, color: 'var(--muted)' }}>Цвет текста и заголовков</label>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <input
+            type="color"
+            value={form.text_color || '#eef7f0'}
+            onChange={(e) => setForm({ ...form, text_color: e.target.value })}
+            style={{ width: 44, height: 44, padding: 0, border: 'none', background: 'none' }}
+          />
+          <input
+            className="panel-input"
+            value={form.text_color || ''}
+            onChange={(e) => setForm({ ...form, text_color: e.target.value })}
+            style={{ textAlign: 'left' }}
+          />
+        </div>
 
         <textarea
           className="panel-input"
@@ -91,7 +104,16 @@ export default function BrandTab({ telegramId, slug, onSaved }: Props) {
           placeholder="Описание заведения"
         />
 
-        <button className="panel-btn" type="submit" disabled={saving}>
+<label style={{ fontSize: 12, color: 'var(--muted)' }}>Текст напоминания о сгорающем подарке (необязательно)</label>
+        <textarea
+          className="panel-input"
+          rows={2}
+          value={form.reminder_text || ''}
+          onChange={(e) => setForm({ ...form, reminder_text: e.target.value })}
+          placeholder="Если оставить пустым — используется стандартный текст"
+        />
+
+                <button className="panel-btn" type="submit" disabled={saving}>
           {saving ? 'Сохранение…' : saved ? 'Сохранено ✓' : 'Сохранить'}
         </button>
         {error && <div className="panel-error">{error}</div>}

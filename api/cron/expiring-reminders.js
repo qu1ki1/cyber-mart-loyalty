@@ -37,10 +37,13 @@ export default async function handler(req, res) {
 
     let sent = 0
     for (const win of expiring) {
-      const { data: business } = await supabase.from('businesses').select('name, slug').eq('id', win.business_id).maybeSingle()
+      const { data: business } = await supabase.from('businesses').select('name, slug, reminder_text').eq('id', win.business_id).maybeSingle()
       if (!business) continue
 
       const appUrl = `${process.env.APP_URL || ''}/?biz=${encodeURIComponent(business.slug)}`
+      const text = business.reminder_text
+        ? business.reminder_text.replace('{gift}', win.gift_name)
+        : `⏳ ${business.name}\n\nПоследний день действия подарка «${win.gift_name}» — не забудь забрать!`
 
       try {
         await fetch(`https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendMessage`, {
@@ -48,7 +51,7 @@ export default async function handler(req, res) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             chat_id: win.telegram_id,
-            text: `⏳ ${business.name}\n\nПоследний день действия подарка «${win.gift_name}» — не забудь забрать!`,
+            text,
             reply_markup: { inline_keyboard: [[{ text: 'Открыть приложение', web_app: { url: appUrl } }]] },
           }),
         })

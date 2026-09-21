@@ -153,14 +153,18 @@ export const THEME_LABELS: Record<ThemeKey, string> = {
   universal: 'Universal',
 }
 
-export function applyTheme(themeKey: string | null | undefined, overrideColor?: string | null) {
+export function applyTheme(
+  themeKey: string | null | undefined,
+  accentColor?: string | null,
+  textColor?: string | null
+) {
   const theme = THEMES[(themeKey as ThemeKey) || 'neon_gaming'] || THEMES.neon_gaming
   const root = document.documentElement.style
   root.setProperty('--bg', theme['--bg'])
-  root.setProperty('--neon', overrideColor || theme['--neon'])
+  root.setProperty('--neon', accentColor || theme['--neon'])
   root.setProperty('--neon-soft', theme['--neon-soft'])
   root.setProperty('--cyan', theme['--cyan'])
-  root.setProperty('--ink', theme['--ink'])
+  root.setProperty('--ink', textColor || theme['--ink'])
   root.setProperty('--muted', theme['--muted'])
   root.setProperty('--line', theme['--line'])
   root.setProperty('--line-dim', theme['--line-dim'])

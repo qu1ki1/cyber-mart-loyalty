@@ -253,3 +253,37 @@ footer{ margin-top:22px; font-size:10.5px; letter-spacing:0.16em; color: rgba(12
 }
 .panel-toggle.on{ border-color: rgba(57,255,138,.5); }
 .panel-toggle.on::after{ transform: translateX(14px); background: var(--neon); }
+
+.mode-switch{
+  display:flex; gap:4px; background: var(--panel); border:1px solid var(--line-dim);
+  border-radius:100px; padding:4px;
+}
+.mode-switch button{
+  border:none; background:none; cursor:pointer; padding:7px 14px; border-radius:100px;
+  font-family:'Rajdhani', sans-serif; font-size:12.5px; font-weight:600; color: var(--muted);
+  transition: background 150ms, color 150ms;
+}
+.mode-switch button.active{
+  background: linear-gradient(100deg, rgba(57,255,138,0.22), rgba(60,230,255,0.14));
+  color: var(--ink);
+}
+
+.icon-grid{
+  display:grid; grid-template-columns:repeat(8, 1fr); gap:6px;
+  max-height:180px; overflow-y:auto; padding:4px;
+}
+.icon-btn{
+  width:100%; aspect-ratio:1; border-radius:10px; border:1.5px solid var(--line-dim);
+  background: rgba(255,255,255,.03); color: var(--muted); cursor:pointer;
+  display:flex; align-items:center; justify-content:center; transition: all 120ms ease;
+}
+.icon-btn svg{ width:18px; height:18px; }
+.icon-btn:hover{ border-color: var(--line); color: var(--ink); }
+.icon-btn.selected{ border-color: var(--neon); color: var(--neon); background: rgba(57,255,138,.08); box-shadow: 0 0 12px -4px var(--neon-soft); }
+.panel-prize-icon{ width:18px; height:18px; color: var(--neon); flex-shrink:0; }
+.cta-outline{
+  width:100%; max-width:300px; margin-top:12px; padding:13px; border-radius:14px;
+  background: rgba(60,230,255,0.06); border:1px solid rgba(60,230,255,0.35);
+  color: var(--cyan); font-size:13.5px; font-weight:600; cursor:pointer;
+}
+.cta-outline:hover{ background: rgba(60,230,255,0.1); }

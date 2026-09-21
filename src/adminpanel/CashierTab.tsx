@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { getInitData } from '../telegramAuth'
 
 type Props = { telegramId: number; slug: string; role: 'owner' | 'manager' | 'staff' }
 
@@ -27,7 +28,7 @@ function RedeemCard({ telegramId, slug }: { telegramId: number; slug: string }) 
       const res = await fetch('/api/redeem', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: code.trim(), slug, telegram_id: telegramId }),
+        body: JSON.stringify({ init_data: getInitData(), code: code.trim(), slug, telegram_id: telegramId }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Не удалось погасить код')
@@ -83,7 +84,7 @@ function GrantCard({ telegramId, slug }: { telegramId: number; slug: string }) {
       const res = await fetch('/api/grant-attempt', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: username.trim(), count, slug, telegram_id: telegramId }),
+        body: JSON.stringify({ init_data: getInitData(), username: username.trim(), count, slug, telegram_id: telegramId }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Не удалось выдать попытку')

@@ -3,15 +3,19 @@
 // Любая роль (owner/manager/staff) может гасить коды.
 
 import { createClient } from '@supabase/supabase-js'
+import { getVerifiedUser } from '../lib/verifyTelegram.js'
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Метод не поддерживается' })
 
-  const { code, slug, telegram_id } = req.body || {}
-  const telegramId = Number(telegram_id)
-  if (!slug || !telegramId) return res.status(400).json({ error: 'Не хватает данных' })
+  const verified = getVerifiedUser(req)
+  if (!verified) return res.status(401).json({ error: 'Не удалось подтвердить, что это ты. Перезапусти приложение.' })
+  const telegramId = verified.id
+
+  const { code, slug } = req.body || {}
+  if (!slug) return res.status(400).json({ error: 'Не хватает данных' })
   if (!code) return res.status(400).json({ error: 'Не указан код' })
 
   try {

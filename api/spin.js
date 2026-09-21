@@ -7,19 +7,18 @@
 // POST /api/spin  {telegram_id, first_name, username, slug}
 
 import { createClient } from '@supabase/supabase-js'
+import { getVerifiedUser } from '../lib/verifyTelegram.js'
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
-
-const CODE_LIFETIME_DAYS = 14
 
 function startOfTodayISO() {
   const now = new Date()
   return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())).toISOString()
 }
 
-function expiresAtISO() {
+function expiresAtISO(lifetimeDays) {
   const d = new Date()
-  d.setDate(d.getDate() + CODE_LIFETIME_DAYS)
+  d.setDate(d.getDate() + (lifetimeDays || 14))
   return d.toISOString()
 }
 
@@ -38,7 +37,7 @@ function pickWeighted(gifts) {
 }
 
 async function getBusiness(slug) {
-  const { data, error } = await supabase.from('businesses').select('id, name').ilike('slug', slug).maybeSingle()
+  const { data, error } = await supabase.from('businesses').select('id, name, code_lifetime_days').ilike('slug', slug).maybeSingle()
   if (error) throw error
   return data
 }
@@ -59,10 +58,11 @@ async function findTodayWin(businessId, telegramId) {
 }
 
 export default async function handler(req, res) {
-  const telegramId = Number(req.method === 'GET' ? req.query.telegram_id : req.body?.telegram_id)
-  const slug = req.method === 'GET' ? req.query.slug : req.body?.slug
+  const verified = getVerifiedUser(req)
+  if (!verified) return res.status(401).json({ error: 'Не удалось подтвердить, что это ты. Перезапусти приложение.' })
+  const telegramId = verified.id
 
-  if (!telegramId) return res.status(400).json({ error: 'telegram_id обязателен' })
+  const slug = req.method === 'GET' ? req.query.slug : req.body?.slug
   if (!slug) return res.status(400).json({ error: 'Не указан бизнес (slug)' })
 
   try {
@@ -70,7 +70,9 @@ export default async function handler(req, res) {
     if (!business) return res.status(404).json({ error: 'Бизнес не найден — проверь ссылку' })
 
     if (req.method === 'POST') {
-      const { first_name, username, ref } = req.body || {}
+      const first_name = verified.first_name
+      const username = verified.username
+      const { ref } = req.body || {}
       const referrerId = ref ? Number(ref) : null
 
       const { data: existingUser } = await supabase
@@ -156,7 +158,7 @@ export default async function handler(req, res) {
 
     const winner = pickWeighted(gifts)
     const code = generateCode(winner.prefix || 'CM')
-    const expiresAt = expiresAtISO()
+    const expiresAt = expiresAtISO(business.code_lifetime_days)
 
     const { error: insertError } = await supabase.from('winners').insert({
       business_id: business.id,

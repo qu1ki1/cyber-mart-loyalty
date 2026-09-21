@@ -26,6 +26,8 @@ interface TelegramWebApp {
   ):void;
 
 
+  initData: string;
+
   initDataUnsafe:{
     user?: TelegramUser;
     start_param?: string;

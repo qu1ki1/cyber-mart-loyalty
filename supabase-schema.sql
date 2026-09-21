@@ -86,3 +86,12 @@ create index if not exists admins_telegram_idx on admins (telegram_id);
 create unique index if not exists invites_code_idx on invites (code);
 
 NOTIFY pgrst, 'reload schema';
+
+-- Свой текст напоминания о сгорающем подарке (если пусто — используется стандартный).
+alter table businesses add column if not exists reminder_text text;
+NOTIFY pgrst, 'reload schema';
+
+-- Версия 1.1: свой цвет текста, срок действия кода настраивается владельцем.
+alter table businesses add column if not exists text_color text default '#eef7f0';
+alter table businesses add column if not exists code_lifetime_days integer default 14;
+NOTIFY pgrst, 'reload schema';

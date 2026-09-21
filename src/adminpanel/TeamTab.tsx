@@ -1,12 +1,46 @@
 import { useState } from 'react'
+import { getInitData } from '../telegramAuth'
 
 type Props = { telegramId: number; slug: string; botUsername: string }
 
 export default function TeamTab({ telegramId, slug, botUsername }: Props) {
   return (
     <div>
+      <QrCard slug={slug} botUsername={botUsername} />
       <InviteCard telegramId={telegramId} slug={slug} role="manager" botUsername={botUsername} title="Пригласить управляющего" hint="Может гасить коды и выдавать попытки" />
       <InviteCard telegramId={telegramId} slug={slug} role="staff" botUsername={botUsername} title="Пригласить сотрудника" hint="Может только гасить коды" />
+    </div>
+  )
+}
+
+function QrCard({ slug, botUsername }: { slug: string; botUsername: string }) {
+  if (!botUsername) {
+    return (
+      <div className="panel-card">
+        <h2>QR-код для заведения</h2>
+        <p className="panel-hint">
+          Чтобы показать QR, нужно задать VITE_BOT_USERNAME в переменных окружения Vercel — username твоего бота без @.
+        </p>
+      </div>
+    )
+  }
+
+  const deepLink = `https://t.me/${botUsername}?start=${slug}`
+  const qrImg = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=10&data=${encodeURIComponent(deepLink)}`
+
+  return (
+    <div className="panel-card" style={{ textAlign: 'center' }}>
+      <h2>QR-код для заведения</h2>
+      <p className="panel-hint">Распечатай и повесь у входа или на кассе — гости сканируют и сразу попадают в игру.</p>
+      <img
+        src={qrImg}
+        alt="QR-код"
+        style={{ width: 180, height: 180, borderRadius: 12, background: '#fff', padding: 10, margin: '4px auto 12px' }}
+      />
+      <div style={{ fontSize: 12, color: 'var(--muted)', wordBreak: 'break-all', marginBottom: 10 }}>{deepLink}</div>
+      <a href={qrImg} download={`qr-${slug}.png`} className="panel-btn" style={{ display: 'inline-block', textDecoration: 'none' }}>
+        Скачать QR
+      </a>
     </div>
   )
 }
@@ -38,7 +72,7 @@ function InviteCard({
       const res = await fetch('/api/invite', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ telegram_id: telegramId, slug, role }),
+        body: JSON.stringify({ init_data: getInitData(), telegram_id: telegramId, slug, role }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Не удалось создать приглашение')
