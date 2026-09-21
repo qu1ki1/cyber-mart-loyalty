@@ -9,6 +9,7 @@ import { applyTheme } from './themes'
 import { getInitData } from './telegramAuth'
 import AdminPanel from './adminpanel/AdminPanel'
 import RegisterInApp from './adminpanel/RegisterInApp'
+import CabinetLogin from './adminpanel/CabinetLogin'
 import OnboardingChecklist from './adminpanel/OnboardingChecklist'
 import MyCodes from './components/MyCodes'
 
@@ -81,6 +82,7 @@ export default function App() {
   const [loadError, setLoadError] = useState<string | null>(null)
 
   const [selectedSlug, setSelectedSlug] = useState<string | null>(null)
+  const [showRegisterForm, setShowRegisterForm] = useState(false)
   const [mode, setMode] = useState<Mode>('game')
   const [screen, setScreen] = useState<Screen>('open')
   const [result, setResult] = useState<SpinResult | null>(null)
@@ -204,13 +206,24 @@ export default function App() {
     )
   }
 
-  // ---------- ссылки не было вообще — предлагаем создать бизнес прямо тут ----------
+  // ---------- ссылки не было вообще — личный кабинет или регистрация ----------
   if (!activeBusiness) {
     return (
       <div className="app">
         <div className="bg-grid" />
         <div className="bg-glow" />
-        <RegisterInApp telegramId={telegramUser.id} onCreated={handleBusinessCreated} />
+        {showRegisterForm ? (
+          <RegisterInApp telegramId={telegramUser.id} onCreated={handleBusinessCreated} />
+        ) : (
+          <CabinetLogin
+            onLoggedIn={(business) => {
+              setContext({ business, role: 'owner', my_businesses: [] })
+              setMode('panel')
+              applyTheme(business.design_theme, business.primary_color, business.text_color)
+            }}
+            onRegisterInstead={() => setShowRegisterForm(true)}
+          />
+        )}
       </div>
     )
   }

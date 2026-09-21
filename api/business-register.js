@@ -30,15 +30,21 @@ export default async function handler(req, res) {
   if (!verified) return res.status(401).json({ error: 'Не удалось подтвердить, что это ты. Перезапусти приложение.' })
   const telegramId = verified.id
 
-  const { name } = req.body || {}
+  const { name, login, owner_password } = req.body || {}
   if (!name) return res.status(400).json({ error: 'Укажи название бизнеса' })
+  if (!login) return res.status(400).json({ error: 'Укажи логин' })
+  if (!owner_password || owner_password.length < 4) {
+    return res.status(400).json({ error: 'Пароль слишком короткий (минимум 4 символа)' })
+  }
 
   try {
-    let slug = slugify(name)
-    const { data: taken } = await supabase.from('businesses').select('id').ilike('slug', slug).maybeSingle()
-    if (taken) slug = `${slug}-${Math.floor(Math.random() * 900 + 100)}`
+    const slug = slugify(login)
+    if (!slug) return res.status(400).json({ error: 'Логин должен содержать буквы или цифры' })
 
-    const { data: business, error } = await supabase.from('businesses').insert({ name, slug }).select().single()
+    const { data: taken } = await supabase.from('businesses').select('id').ilike('slug', slug).maybeSingle()
+    if (taken) return res.status(409).json({ error: `Логин «${slug}» уже занят, придумай другой` })
+
+    const { data: business, error } = await supabase.from('businesses').insert({ name, slug, owner_password }).select().single()
     if (error) throw error
 
     await supabase.from('gifts').insert(DEFAULT_GIFTS.map((g) => ({ ...g, business_id: business.id })))
