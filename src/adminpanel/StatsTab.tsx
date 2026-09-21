@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { getInitData } from '../telegramAuth'
+import { authQueryString } from '../auth'
 
 type Props = { telegramId: number; slug: string }
 type Period = 'day' | 'week' | 'month'
@@ -20,7 +20,7 @@ export default function StatsTab({ telegramId, slug }: Props) {
 
   useEffect(() => {
     setStats(null)
-    fetch(`/api/reports?type=stats&init_data=${encodeURIComponent(getInitData())}&slug=${encodeURIComponent(slug)}&period=${period}`)
+    fetch(`/api/reports?type=stats&${authQueryString()}&slug=${encodeURIComponent(slug)}&period=${period}`)
       .then((r) => r.json())
       .then((data) => setStats(data))
       .catch(() => {})

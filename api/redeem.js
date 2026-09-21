@@ -3,32 +3,23 @@
 // Любая роль (owner/manager/staff) может гасить коды.
 
 import { createClient } from '@supabase/supabase-js'
-import { getVerifiedUser } from '../lib/verifyTelegram.js'
+import { resolveActor } from '../lib/verifyTelegram.js'
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Метод не поддерживается' })
 
-  const verified = getVerifiedUser(req)
-  if (!verified) return res.status(401).json({ error: 'Не удалось подтвердить, что это ты. Перезапусти приложение.' })
-  const telegramId = verified.id
-
   const { code, slug } = req.body || {}
   if (!slug) return res.status(400).json({ error: 'Не хватает данных' })
   if (!code) return res.status(400).json({ error: 'Не указан код' })
 
   try {
-    const { data: business } = await supabase.from('businesses').select('id').ilike('slug', slug).maybeSingle()
+    const { data: business } = await supabase.from('businesses').select('id, owner_password').ilike('slug', slug).maybeSingle()
     if (!business) return res.status(404).json({ error: 'Бизнес не найден' })
 
-    const { data: admin } = await supabase
-      .from('admins')
-      .select('role')
-      .eq('business_id', business.id)
-      .eq('telegram_id', telegramId)
-      .maybeSingle()
-    if (!admin) return res.status(403).json({ error: 'У тебя нет доступа к этому бизнесу' })
+    const actor = await resolveActor(req, supabase, business)
+    if (!actor) return res.status(403).json({ error: 'Нет доступа' })
 
     const { data: win, error } = await supabase
       .from('winners')

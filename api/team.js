@@ -4,7 +4,7 @@
 // DELETE /api/team  { init_data, slug, admin_id }        -> убрать доступ (owner only)
 
 import { createClient } from '@supabase/supabase-js'
-import { getVerifiedUser } from '../lib/verifyTelegram.js'
+import { resolveActor } from '../lib/verifyTelegram.js'
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
 
@@ -12,29 +12,20 @@ function genCode() {
   return Math.random().toString(36).slice(2, 8)
 }
 
-async function requireOwner(telegramId, slug) {
-  const { data: business } = await supabase.from('businesses').select('id').ilike('slug', slug).maybeSingle()
+async function requireOwner(req, slug) {
+  const { data: business } = await supabase.from('businesses').select('id, owner_password').ilike('slug', slug).maybeSingle()
   if (!business) return { error: 'Бизнес не найден' }
 
-  const { data: admin } = await supabase
-    .from('admins')
-    .select('role')
-    .eq('business_id', business.id)
-    .eq('telegram_id', telegramId)
-    .maybeSingle()
-
-  if (!admin || admin.role !== 'owner') return { error: 'Только владелец может управлять командой' }
+  const actor = await resolveActor(req, supabase, business)
+  if (!actor || actor.role !== 'owner') return { error: 'Только владелец может управлять командой' }
   return { businessId: business.id }
 }
 
 export default async function handler(req, res) {
-  const verified = getVerifiedUser(req)
-  if (!verified) return res.status(401).json({ error: 'Не удалось подтвердить, что это ты. Перезапусти приложение.' })
-  const telegramId = verified.id
   const slug = req.method === 'GET' ? req.query.slug : req.body?.slug
   if (!slug) return res.status(400).json({ error: 'Не хватает данных' })
 
-  const resolved = await requireOwner(telegramId, slug)
+  const resolved = await requireOwner(req, slug)
   if (resolved.error) return res.status(403).json({ error: resolved.error })
 
   if (req.method === 'GET') {

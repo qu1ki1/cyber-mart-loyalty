@@ -4,7 +4,7 @@
 //     owner и manager могут менять.
 
 import { createClient } from '@supabase/supabase-js'
-import { getVerifiedUser } from '../lib/verifyTelegram.js'
+import { resolveActor } from '../lib/verifyTelegram.js'
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
 const PUBLIC_FIELDS = 'id, slug, name, logo_url, primary_color, text_color, design_theme, description, reminder_text, code_lifetime_days'
@@ -26,18 +26,26 @@ export default async function handler(req, res) {
 
   if (req.method !== 'PUT') return res.status(405).json({ error: 'Метод не поддерживается' })
 
-  const verified = getVerifiedUser(req)
-  if (!verified) return res.status(401).json({ error: 'Не удалось подтвердить, что это ты. Перезапусти приложение.' })
-  const telegramId = verified.id
-
-  const { slug, name, logo_url, primary_color, text_color, design_theme, description, custom_domain, reminder_text, code_lifetime_days } = req.body || {}
+  const {
+    slug,
+    name,
+    logo_url,
+    primary_color,
+    text_color,
+    design_theme,
+    description,
+    custom_domain,
+    reminder_text,
+    code_lifetime_days,
+    owner_password,
+  } = req.body || {}
   if (!slug) return res.status(400).json({ error: 'Не хватает данных' })
 
-  const { data: business } = await supabase.from('businesses').select('id').ilike('slug', slug).maybeSingle()
+  const { data: business } = await supabase.from('businesses').select('id, owner_password').ilike('slug', slug).maybeSingle()
   if (!business) return res.status(404).json({ error: 'Бизнес не найден' })
 
-  const { data: admin } = await supabase.from('admins').select('role').eq('business_id', business.id).eq('telegram_id', telegramId).maybeSingle()
-  if (!admin || admin.role === 'staff') return res.status(403).json({ error: 'Настройки бренда может менять только владелец или управляющий' })
+  const actor = await resolveActor(req, supabase, business)
+  if (!actor || actor.role === 'staff') return res.status(403).json({ error: 'Настройки бренда может менять только владелец или управляющий' })
 
   const updates = {}
   if (name !== undefined) updates.name = name
@@ -49,6 +57,8 @@ export default async function handler(req, res) {
   if (custom_domain !== undefined) updates.custom_domain = custom_domain || null
   if (reminder_text !== undefined) updates.reminder_text = reminder_text || null
   if (code_lifetime_days !== undefined) updates.code_lifetime_days = Math.max(1, Number(code_lifetime_days) || 14)
+  // Пароль меняет только владелец (не управляющий) и только когда реально прислано новое значение.
+  if (owner_password && actor.role === 'owner') updates.owner_password = owner_password
 
   const { data, error } = await supabase.from('businesses').update(updates).eq('id', business.id).select(PUBLIC_FIELDS).single()
   if (error) return res.status(500).json({ error: 'Не удалось загрузить настройки бренда.' })

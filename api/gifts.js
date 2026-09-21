@@ -7,34 +7,24 @@
 // owner и manager могут всё, staff — только смотреть.
 
 import { createClient } from '@supabase/supabase-js'
-import { getVerifiedUser } from '../lib/verifyTelegram.js'
+import { resolveActor } from '../lib/verifyTelegram.js'
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
 
-async function resolveAdmin(telegramId, slug) {
-  const { data: business } = await supabase.from('businesses').select('id').ilike('slug', slug).maybeSingle()
+async function resolveAdmin(req, slug) {
+  const { data: business } = await supabase.from('businesses').select('id, owner_password').ilike('slug', slug).maybeSingle()
   if (!business) return { error: 'Бизнес не найден' }
 
-  const { data: admin } = await supabase
-    .from('admins')
-    .select('role')
-    .eq('business_id', business.id)
-    .eq('telegram_id', telegramId)
-    .maybeSingle()
-
-  if (!admin) return { error: 'Нет доступа' }
-  return { businessId: business.id, role: admin.role }
+  const actor = await resolveActor(req, supabase, business)
+  if (!actor) return { error: 'Нет доступа' }
+  return { businessId: business.id, role: actor.role }
 }
 
 export default async function handler(req, res) {
-  const verified = getVerifiedUser(req)
-  if (!verified) return res.status(401).json({ error: 'Не удалось подтвердить, что это ты. Перезапусти приложение.' })
-  const telegramId = verified.id
-
   const slug = req.method === 'GET' ? req.query.slug : req.body?.slug
   if (!slug) return res.status(400).json({ error: 'Не хватает данных' })
 
-  const resolved = await resolveAdmin(telegramId, slug)
+  const resolved = await resolveAdmin(req, slug)
   if (resolved.error) return res.status(403).json({ error: resolved.error })
 
   try {

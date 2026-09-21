@@ -95,3 +95,7 @@ NOTIFY pgrst, 'reload schema';
 alter table businesses add column if not exists text_color text default '#eef7f0';
 alter table businesses add column if not exists code_lifetime_days integer default 14;
 NOTIFY pgrst, 'reload schema';
+
+-- Пароль владельца для входа с компьютера (без Telegram), страница /login.
+alter table businesses add column if not exists owner_password text;
+NOTIFY pgrst, 'reload schema';

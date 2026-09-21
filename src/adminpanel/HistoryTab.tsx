@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { getInitData } from '../telegramAuth'
+import { authQueryString } from '../auth'
 
 type Entry = {
   id: number
@@ -22,7 +22,7 @@ export default function HistoryTab({ slug }: Props) {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    fetch(`/api/reports?type=history&init_data=${encodeURIComponent(getInitData())}&slug=${encodeURIComponent(slug)}`)
+    fetch(`/api/reports?type=history&${authQueryString()}&slug=${encodeURIComponent(slug)}`)
       .then((r) => r.json())
       .then((data) => {
         if (Array.isArray(data)) setEntries(data)

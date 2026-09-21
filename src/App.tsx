@@ -80,6 +80,7 @@ export default function App() {
   const [context, setContext] = useState<MyContext | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
 
+  const [selectedSlug, setSelectedSlug] = useState<string | null>(null)
   const [mode, setMode] = useState<Mode>('game')
   const [screen, setScreen] = useState<Screen>('open')
   const [result, setResult] = useState<SpinResult | null>(null)
@@ -115,9 +116,10 @@ export default function App() {
     })
   }, [telegramUser])
 
-  const activeBusiness: (Business & { role?: Role | null }) | null =
-    context?.business || context?.my_businesses[0] || null
-  const activeRole: Role | null = context?.business ? context.role : context?.my_businesses[0]?.role || null
+  const myBusinesses = context?.my_businesses || []
+  const selectedFromList = myBusinesses.find((b) => b.slug === selectedSlug) || myBusinesses[0] || null
+  const activeBusiness: (Business & { role?: Role | null }) | null = context?.business || selectedFromList || null
+  const activeRole: Role | null = context?.business ? context.role : selectedFromList?.role || null
 
   useEffect(() => {
     if (!telegramUser || !activeBusiness) return
@@ -245,6 +247,23 @@ export default function App() {
           )}
         </div>
       </header>
+
+      {!context?.business && myBusinesses.length > 1 && (
+        <div style={{ width: '100%', maxWidth: 420, marginBottom: 16 }}>
+          <select
+            className="panel-input"
+            value={activeBusiness.slug}
+            onChange={(e) => setSelectedSlug(e.target.value)}
+            style={{ textAlign: 'center' }}
+          >
+            {myBusinesses.map((b) => (
+              <option key={b.slug} value={b.slug}>
+                {b.name} — {b.role === 'owner' ? 'владелец' : b.role === 'manager' ? 'управляющий' : 'сотрудник'}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {mode === 'onboarding' ? (
         <OnboardingChecklist businessName={activeBusiness.name} onContinue={() => setMode('panel')} />

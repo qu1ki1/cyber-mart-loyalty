@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { getInitData } from '../telegramAuth'
+import { getAuthFields, authQueryString } from '../auth'
 import { Icon, ICON_OPTIONS, type IconKey } from '../components/Icon'
 
 type Gift = { id: number; name: string; chance: number; icon: IconKey; active: boolean }
@@ -19,7 +19,7 @@ export default function PrizesTab({ telegramId, slug }: Props) {
   const [editIcon, setEditIcon] = useState<IconKey>('star')
 
   async function load() {
-    const res = await fetch(`/api/gifts?init_data=${encodeURIComponent(getInitData())}&slug=${encodeURIComponent(slug)}`)
+    const res = await fetch(`/api/gifts?${authQueryString()}&slug=${encodeURIComponent(slug)}`)
     const data = await res.json()
     if (res.ok) setGifts(data)
     setLoading(false)
@@ -37,7 +37,7 @@ export default function PrizesTab({ telegramId, slug }: Props) {
     const res = await fetch('/api/gifts', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ init_data: getInitData(), telegram_id: telegramId, slug, name, chance: percent, icon }),
+      body: JSON.stringify({ ...getAuthFields(), telegram_id: telegramId, slug, name, chance: percent, icon }),
     })
     const data = await res.json()
     if (!res.ok) return setError(data.error)
@@ -51,7 +51,7 @@ export default function PrizesTab({ telegramId, slug }: Props) {
     await fetch('/api/gifts', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ init_data: getInitData(), telegram_id: telegramId, slug, id: g.id, active: !g.active }),
+      body: JSON.stringify({ ...getAuthFields(), telegram_id: telegramId, slug, id: g.id, active: !g.active }),
     })
     load()
   }
@@ -60,7 +60,7 @@ export default function PrizesTab({ telegramId, slug }: Props) {
     await fetch('/api/gifts', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ init_data: getInitData(), telegram_id: telegramId, slug, id: g.id }),
+      body: JSON.stringify({ ...getAuthFields(), telegram_id: telegramId, slug, id: g.id }),
     })
     load()
   }
@@ -78,8 +78,7 @@ export default function PrizesTab({ telegramId, slug }: Props) {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        init_data: getInitData(),
-        telegram_id: telegramId,
+        ...getAuthFields(), telegram_id: telegramId,
         slug,
         id: g.id,
         name: editName,
@@ -198,7 +197,7 @@ function ExpirySettingCard({ telegramId, slug }: { telegramId: number; slug: str
     await fetch('/api/business-settings', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ init_data: getInitData(), telegram_id: telegramId, slug, code_lifetime_days: days }),
+      body: JSON.stringify({ ...getAuthFields(), telegram_id: telegramId, slug, code_lifetime_days: days }),
     })
     setSaving(false)
     setSaved(true)

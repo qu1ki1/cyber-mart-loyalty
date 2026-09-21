@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { getInitData } from '../telegramAuth'
+import { getAuthFields, authQueryString } from '../auth'
 
 type Props = { telegramId: number; slug: string; botUsername: string }
 type Member = { id: number; role: 'manager' | 'staff'; added_at: string; name: string }
@@ -94,7 +94,7 @@ function InviteCard({
       const res = await fetch('/api/team', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ init_data: getInitData(), telegram_id: telegramId, slug, role }),
+        body: JSON.stringify({ ...getAuthFields(), telegram_id: telegramId, slug, role }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Не удалось создать приглашение')
@@ -137,7 +137,7 @@ function TeamList({ telegramId, slug, refreshKey }: { telegramId: number; slug: 
   const [error, setError] = useState<string | null>(null)
 
   function load() {
-    fetch(`/api/team?init_data=${encodeURIComponent(getInitData())}&slug=${encodeURIComponent(slug)}`)
+    fetch(`/api/team?${authQueryString()}&slug=${encodeURIComponent(slug)}`)
       .then((r) => r.json())
       .then((data) => {
         if (Array.isArray(data)) setMembers(data)
@@ -152,7 +152,7 @@ function TeamList({ telegramId, slug, refreshKey }: { telegramId: number; slug: 
     await fetch('/api/team', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ init_data: getInitData(), telegram_id: telegramId, slug, admin_id: id }),
+      body: JSON.stringify({ ...getAuthFields(), telegram_id: telegramId, slug, admin_id: id }),
     })
     load()
   }
