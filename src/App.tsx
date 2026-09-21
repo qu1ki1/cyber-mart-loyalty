@@ -44,6 +44,8 @@ type SpinResult = {
   expires_at?: string
   redeemed?: boolean
   error?: string
+  bonus_attempts?: number
+  has_daily?: boolean
 }
 
 const BOT_USERNAME = import.meta.env.VITE_BOT_USERNAME || ''
@@ -87,6 +89,7 @@ export default function App() {
   const [screen, setScreen] = useState<Screen>('open')
   const [result, setResult] = useState<SpinResult | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [bonusAttempts, setBonusAttempts] = useState(0)
   const busy = useRef(false)
 
   useEffect(() => {
@@ -112,8 +115,6 @@ export default function App() {
       const resolved = ctx.business || ctx.my_businesses[0] || null
       if (resolved) applyTheme(resolved.design_theme, resolved.primary_color, resolved.text_color)
 
-      // Если ссылка привела к конкретному бизнесу — по умолчанию игра.
-      // Если открыли бота "просто так" и это владелец/сотрудник — сразу панель.
       if (!ctx.business && ctx.my_businesses.length > 0) setMode('panel')
     })
   }, [telegramUser])
@@ -128,6 +129,7 @@ export default function App() {
     fetchStatus(activeBusiness.slug)
       .then((status) => {
         if (status.already_spun) setResult(status)
+        setBonusAttempts(status.bonus_attempts ?? 0)
       })
       .catch(() => {})
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -144,6 +146,7 @@ export default function App() {
     try {
       const spin = await requestSpin(activeBusiness.slug)
       setResult(spin)
+      setBonusAttempts(spin.bonus_attempts ?? 0)
     } catch (err) {
       setScreen('open')
       setError(err instanceof Error ? err.message : 'Не удалось открыть кейс')
@@ -162,7 +165,6 @@ export default function App() {
     })
   }
 
-  // ---------- экраны загрузки/ошибок ----------
   if (loadError) {
     return (
       <div className="app">
@@ -189,8 +191,6 @@ export default function App() {
     )
   }
 
-  // Ссылка была, но бизнес по ней не нашёлся — это сломанная/неверная
-  // ссылка, а не "давай создадим новый бизнес". Показываем чётко.
   if (!activeBusiness && getBusinessSlug()) {
     return (
       <div className="app">
@@ -206,7 +206,6 @@ export default function App() {
     )
   }
 
-  // ---------- ссылки не было вообще — личный кабинет или регистрация ----------
   if (!activeBusiness) {
     return (
       <div className="app">
@@ -229,6 +228,14 @@ export default function App() {
   }
 
   const isAdmin = !!activeRole
+
+  // Сколько попыток показать
+  const totalAttempts = alreadySpun ? 0 : 1 + bonusAttempts
+  const attemptsLabel = alreadySpun
+    ? 'Попытка использована — приходи завтра'
+    : bonusAttempts > 0
+      ? `Попыток: ${totalAttempts} (1 сегодня + ${bonusAttempts} бонус)`
+      : 'Попытка на сегодня доступна'
 
   return (
     <div className="app">
@@ -316,7 +323,7 @@ export default function App() {
 
                 {alreadySpun ? (
                   <>
-                    <div className="status-pill">Попытка использована — приходи завтра</div>
+                    <div className="status-pill">{attemptsLabel}</div>
                     <button className="cta" disabled>
                       Уже использовано
                     </button>
@@ -329,7 +336,7 @@ export default function App() {
                   </>
                 ) : (
                   <>
-                    <div className="status-pill ready">Попытка на сегодня доступна</div>
+                    <div className="status-pill ready">{attemptsLabel}</div>
                     <button className="cta" onClick={openCase}>
                       Открыть кейс
                     </button>
@@ -340,7 +347,6 @@ export default function App() {
                     <button className="cta-outline" onClick={() => setMode('register')}>
                       Зарегистрировать свой бизнес
                     </button>
-
                   </>
                 )}
               </motion.div>

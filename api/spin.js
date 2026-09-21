@@ -106,11 +106,17 @@ export default async function handler(req, res) {
         code: existing.code,
         redeemed: existing.redeemed,
         expires_at: existing.expires_at,
+        bonus_attempts: 0,
       })
     }
 
     if (req.method !== 'POST') {
-      return res.status(200).json({ already_spun: !!existing, bonus_attempts: bonusAttempts })
+      const canSpin = !existing || bonusAttempts > 0
+      return res.status(200).json({
+        already_spun: !canSpin,
+        bonus_attempts: bonusAttempts,
+        has_daily: !existing,
+      })
     }
 
     const { data: gifts, error: giftsError } = await supabase.from('gifts').select('*').eq('business_id', business.id).eq('active', true)
@@ -150,11 +156,12 @@ export default async function handler(req, res) {
       icon: winner.icon || 'star',
       code,
       expires_at: expiresAt,
+      bonus_attempts: existing ? bonusAttempts - 1 : bonusAttempts,
     })
   } catch (err) {
     console.error('SPIN ERROR:', err)
-    return res.status(500).json({ 
-      error: err?.message || String(err) || 'Неизвестная ошибка'
+    return res.status(500).json({
+      error: err?.message || String(err) || 'Неизвестная ошибка',
     })
   }
 }
