@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { setWebSession, getWebSession } from '../auth'
+import { setWebSession, getWebSession, clearWebSession } from '../auth'
 
 type Business = {
   id: number
@@ -24,7 +24,6 @@ export default function CabinetLogin({ onLoggedIn, onRegisterInstead }: Props) {
   const [success, setSuccess] = useState<string | null>(null)
   const [autoChecking, setAutoChecking] = useState(true)
 
-  // Авто-вход, если сессия уже сохранена (после регистрации или прошлого входа)
   useEffect(() => {
     const session = getWebSession()
     if (!session) {
@@ -39,8 +38,6 @@ export default function CabinetLogin({ onLoggedIn, onRegisterInstead }: Props) {
           `/api/team?slug=${encodeURIComponent(session.slug)}&password=${encodeURIComponent(session.password)}`
         )
         if (!checkRes.ok) {
-          // Сессия устарела (пароль сменили) — очищаем
-          const { clearWebSession } = await import('../auth')
           clearWebSession()
           if (!cancelled) setAutoChecking(false)
           return
@@ -97,10 +94,10 @@ export default function CabinetLogin({ onLoggedIn, onRegisterInstead }: Props) {
     setError(null)
     setSuccess(null)
     try {
-      const res = await fetch('/api/recover', {
+      const res = await fetch('/api/business-register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ login: login.trim() }),
+        body: JSON.stringify({ action: 'recover', login: login.trim() }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Не удалось восстановить доступ')
